@@ -35,11 +35,11 @@ final class CachedTierPriceRuleProvider implements TierPriceRuleProviderInterfac
     {
         $productId = $product->getId();
         $channelId = $channel->getId();
-        if (null === $productId || null === $channelId) {
+        $groupId = $customerGroup?->getId();
+        if (!is_int($productId) || !is_int($channelId) || (null !== $groupId && !is_int($groupId))) {
             return [];
         }
-        $groupId = $customerGroup?->getId();
-        $key = sprintf('tmonier_tier_pricing.rules.%d.%d.%s', $channelId, (int) $productId, null === $groupId ? 'all' : (string) $groupId);
+        $key = sprintf('tmonier_tier_pricing.rules.%d.%d.%s', $channelId, $productId, null === $groupId ? 'all' : (string) $groupId);
 
         if (isset($this->memo[$key])) {
             return $this->memo[$key];
@@ -51,7 +51,7 @@ final class CachedTierPriceRuleProvider implements TierPriceRuleProviderInterfac
         /** @var list<TierPriceRuleData> $rules */
         $rules = $this->cache->get($key, function (ItemInterface $item) use ($channel, $product, $customerGroup, $channelId, $productId, $groupId): array {
             $item->expiresAfter($this->ttl);
-            $tags = [self::ALL_TAG, self::productTag((int) $productId), 'tmonier_tier_pricing.channel_' . $channelId];
+            $tags = [self::ALL_TAG, self::productTag($productId), 'tmonier_tier_pricing.channel_' . $channelId];
             if (null !== $groupId) {
                 $tags[] = 'tmonier_tier_pricing.group_' . $groupId;
             }

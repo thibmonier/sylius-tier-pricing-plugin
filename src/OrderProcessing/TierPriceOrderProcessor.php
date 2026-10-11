@@ -7,7 +7,6 @@ namespace Tmonier\SyliusTierPricingPlugin\OrderProcessing;
 use Sylius\Component\Core\Model\AdjustmentInterface;
 use Sylius\Component\Core\Model\OrderInterface;
 use Sylius\Component\Core\Model\OrderItemInterface;
-use Sylius\Component\Core\Model\ProductInterface;
 use Sylius\Component\Order\Factory\AdjustmentFactoryInterface;
 use Sylius\Component\Order\Model\OrderInterface as BaseOrderInterface;
 use Sylius\Component\Order\Processor\OrderProcessorInterface;
@@ -29,6 +28,7 @@ final class TierPriceOrderProcessor implements OrderProcessorInterface
 {
     public const ADJUSTMENT_TYPE = 'tmonier_tier_price';
 
+    /** @param AdjustmentFactoryInterface<\Sylius\Component\Order\Model\AdjustmentInterface> $adjustmentFactory */
     public function __construct(
         private readonly TierPriceCalculatorInterface $calculator,
         private readonly TierPriceExemptionCheckerInterface $exemptionChecker,
@@ -51,7 +51,7 @@ final class TierPriceOrderProcessor implements OrderProcessorInterface
         $items = [];
         $productQuantities = [];
         foreach ($order->getItems() as $item) {
-            if (!$item instanceof OrderItemInterface || $item->isImmutable()) {
+            if ($item->isImmutable()) {
                 continue;
             }
             // The prices recalculator already reset the unit price: the previous marker is stale.
@@ -60,7 +60,7 @@ final class TierPriceOrderProcessor implements OrderProcessorInterface
                 continue;
             }
             $productId = $item->getVariant()?->getProduct()?->getId();
-            if (null === $productId) {
+            if (!is_int($productId)) {
                 continue;
             }
             $items[] = $item;
@@ -70,12 +70,12 @@ final class TierPriceOrderProcessor implements OrderProcessorInterface
         $customerGroup = $order->getCustomer()?->getGroup();
         foreach ($items as $item) {
             $variant = $item->getVariant();
-            $product = $variant?->getProduct();
-            if (null === $variant || !$product instanceof ProductInterface) {
+            $productId = $variant?->getProduct()?->getId();
+            if (null === $variant || !is_int($productId)) {
                 continue;
             }
             $currentPrice = $item->getUnitPrice();
-            $quote = $this->calculator->quote($variant, $channel, $customerGroup, $item->getQuantity(), $productQuantities[$product->getId()] ?? 0, $currentPrice);
+            $quote = $this->calculator->quote($variant, $channel, $customerGroup, $item->getQuantity(), $productQuantities[$productId] ?? 0, $currentPrice);
             if (null === $quote || !$quote->isCheaper()) {
                 continue;
             }

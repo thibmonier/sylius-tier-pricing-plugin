@@ -118,7 +118,15 @@ final class TierPricingExtension extends AbstractExtension
     {
         $marker = $item->getAdjustments(TierPriceOrderProcessor::ADJUSTMENT_TYPE)->first();
 
-        return $marker instanceof \Sylius\Component\Order\Model\AdjustmentInterface ? $marker->getDetails() : null;
+        if (!$marker instanceof \Sylius\Component\Order\Model\AdjustmentInterface) {
+            return null;
+        }
+        $details = [];
+        foreach ($marker->getDetails() as $key => $value) {
+            $details[(string) $key] = $value;
+        }
+
+        return $details;
     }
 
     /** @return list<\Tmonier\SyliusTierPricingPlugin\Entity\TierPriceRuleInterface> */
@@ -145,7 +153,7 @@ final class TierPricingExtension extends AbstractExtension
         $lineQuantity = 0;
         $productQuantity = 0;
         foreach ($order->getItems() as $item) {
-            if (!$item instanceof OrderItemInterface || $item->isImmutable()) {
+            if ($item->isImmutable()) {
                 continue;
             }
             if ($item->getVariant() === $variant) {

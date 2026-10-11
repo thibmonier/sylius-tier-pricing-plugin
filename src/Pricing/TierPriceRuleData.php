@@ -30,10 +30,13 @@ final class TierPriceRuleData
 
     public static function fromRule(TierPriceRuleInterface $rule): self
     {
+        $variantId = TierPriceRuleInterface::SCOPE_VARIANT === $rule->getScope() ? $rule->getVariant()?->getId() : null;
+        $groupId = $rule->getCustomerGroup()?->getId();
+
         return new self(
             (int) $rule->getId(),
-            TierPriceRuleInterface::SCOPE_VARIANT === $rule->getScope() ? $rule->getVariant()?->getId() : null,
-            $rule->getCustomerGroup()?->getId(),
+            is_int($variantId) ? $variantId : null,
+            is_int($groupId) ? $groupId : null,
             $rule->getQuantityBasis(),
             $rule->getMinQuantity(),
             $rule->getType(),

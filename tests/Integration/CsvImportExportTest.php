@@ -47,15 +47,12 @@ final class CsvImportExportTest extends KernelTestCase
 
         $rules = $this->rulesOf($product);
         self::assertCount(3, $rules);
-        $byQuantity = [];
-        foreach ($rules as $rule) {
-            $byQuantity[$rule->getMinQuantity() . ($rule->getCustomerGroup() ? 'g' : '')] = $rule;
-        }
-        self::assertSame(750, $byQuantity['10']->getValue());
-        self::assertSame(TierPriceRuleInterface::BASIS_PRODUCT, $byQuantity['10g']->getQuantityBasis());
-        self::assertSame(640, $byQuantity['50']->getValue());
-        self::assertFalse($byQuantity['50']->isEnabled());
-        self::assertSame($variant->getId(), $byQuantity['50']->getVariant()?->getId());
+        self::assertSame(750, $this->ruleOf($rules, 10, false)->getValue());
+        self::assertSame(TierPriceRuleInterface::BASIS_PRODUCT, $this->ruleOf($rules, 10, true)->getQuantityBasis());
+        $variantRule = $this->ruleOf($rules, 50, false);
+        self::assertSame(640, $variantRule->getValue());
+        self::assertFalse($variantRule->isEnabled());
+        self::assertSame($variant->getId(), $variantRule->getVariant()?->getId());
 
         $result = $this->importer()->import($this->stream(self::HEADER . sprintf("%s,,product,%s,,line,10,percentage_off,8,1,,\n", $channel->getCode(), $product->getCode())));
         self::assertSame([0, 1], [$result->created, $result->updated]);
@@ -107,7 +104,7 @@ final class CsvImportExportTest extends KernelTestCase
         file_put_contents($file, self::HEADER . sprintf("%s,,product,%s,,line,20,fixed_unit_price,9.99,1,,\n", $channel->getCode(), $product->getCode()));
 
         try {
-            $import = new CommandTester((new Application(self::$kernel))->find('tmonier:tier-pricing:import'));
+            $import = new CommandTester($this->application()->find('tmonier:tier-pricing:import'));
             $import->execute(['file' => $file, '--dry-run' => true, '--mode' => 'replace', '--channel' => $channel->getCode()]);
             self::assertSame(0, $import->getStatusCode(), $import->getDisplay());
             self::assertStringContainsString('Dry run', $import->getDisplay());
@@ -121,7 +118,7 @@ final class CsvImportExportTest extends KernelTestCase
             self::assertSame(20, $rules[0]->getMinQuantity());
             self::assertNotSame($kept->getId(), $rules[0]->getId());
 
-            $export = new CommandTester((new Application(self::$kernel))->find('tmonier:tier-pricing:export'));
+            $export = new CommandTester($this->application()->find('tmonier:tier-pricing:export'));
             $export->execute(['file' => $file, '--channel' => $channel->getCode()]);
             self::assertSame(0, $export->getStatusCode());
             $exported = (string) file_get_contents($file);
@@ -151,6 +148,18 @@ final class CsvImportExportTest extends KernelTestCase
         self::assertGreaterThanOrEqual(1, $result->updated);
     }
 
+    /** @param list<TierPriceRuleInterface> $rules */
+    private function ruleOf(array $rules, int $minQuantity, bool $grouped): TierPriceRuleInterface
+    {
+        foreach ($rules as $rule) {
+            if ($rule->getMinQuantity() === $minQuantity && $grouped === (null !== $rule->getCustomerGroup())) {
+                return $rule;
+            }
+        }
+
+        self::fail(sprintf('No rule from %d', $minQuantity));
+    }
+
     /** @return list<TierPriceRuleInterface> */
     private function rulesOf(\Sylius\Component\Core\Model\ProductInterface $product): array
     {
@@ -171,6 +180,13 @@ final class CsvImportExportTest extends KernelTestCase
         rewind($stream);
 
         return $stream;
+    }
+
+    private function application(): Application
+    {
+        self::assertNotNull(self::$kernel);
+
+        return new Application(self::$kernel);
     }
 
     private function importer(): TierPriceRuleCsvImporter

@@ -59,6 +59,7 @@ final class TierPriceRuleCsvImporter
 
         $connection = $this->entityManager->getConnection();
         $connection->beginTransaction();
+
         try {
             if (self::MODE_REPLACE === $mode) {
                 $result->deleted = $this->deleteAll($channelCode);
@@ -148,6 +149,7 @@ final class TierPriceRuleCsvImporter
         if (null === $value) {
             return sprintf('invalid value "%s"', $data['value']);
         }
+
         try {
             $startsAt = '' === $data['starts_at'] ? null : new \DateTime($data['starts_at']);
             $endsAt = '' === $data['ends_at'] ? null : new \DateTime($data['ends_at']);

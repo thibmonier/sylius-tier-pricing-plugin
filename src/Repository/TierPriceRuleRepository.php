@@ -12,9 +12,6 @@ use Sylius\Component\Customer\Model\CustomerGroupInterface;
 use Tmonier\SyliusTierPricingPlugin\Entity\TierPriceRuleInterface;
 use Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceRuleData;
 
-/**
- * @extends EntityRepository<TierPriceRuleInterface>
- */
 class TierPriceRuleRepository extends EntityRepository implements TierPriceRuleRepositoryInterface
 {
     public function findCandidateData(ChannelInterface $channel, ProductInterface $product, ?CustomerGroupInterface $customerGroup): array

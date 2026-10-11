@@ -36,13 +36,16 @@ final class ImportTierPriceRulesCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $mode = (string) $input->getOption('mode');
-        if (!in_array($mode, [TierPriceRuleCsvImporter::MODE_UPSERT, TierPriceRuleCsvImporter::MODE_REPLACE], true)) {
+        $mode = $input->getOption('mode');
+        if (!is_string($mode) || !in_array($mode, [TierPriceRuleCsvImporter::MODE_UPSERT, TierPriceRuleCsvImporter::MODE_REPLACE], true)) {
             $io->error('The mode must be "upsert" or "replace".');
 
             return self::INVALID;
         }
-        $file = (string) $input->getArgument('file');
+        $file = $input->getArgument('file');
+        if (!is_string($file)) {
+            return self::INVALID;
+        }
         $stream = '-' === $file ? \STDIN : @fopen($file, 'r');
         if (!is_resource($stream)) {
             $io->error(sprintf('Cannot read "%s".', $file));

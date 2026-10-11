@@ -28,7 +28,6 @@ final class ProcessorPriorityTest extends KernelTestCase
         self::assertInstanceOf(\Laminas\Stdlib\PriorityQueue::class, $queue);
         $priorities = [];
         foreach ($queue->toArray(\Laminas\Stdlib\PriorityQueue::EXTR_BOTH) as $entry) {
-            self::assertIsArray($entry);
             self::assertIsObject($entry['data']);
             $priorities[$entry['data']::class][] = $entry['priority'];
         }

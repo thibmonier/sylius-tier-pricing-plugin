@@ -7,6 +7,7 @@ namespace Tmonier\SyliusTierPricingPlugin\EventListener;
 use Doctrine\ORM\Event\OnFlushEventArgs;
 use Doctrine\ORM\Event\PostFlushEventArgs;
 use Sylius\Component\Product\Model\ProductInterface;
+use Sylius\Component\Product\Model\ProductVariantInterface;
 use Tmonier\SyliusTierPricingPlugin\Entity\TierPriceRuleInterface;
 use Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceRuleProviderInterface;
 
@@ -33,12 +34,13 @@ final class TierPriceCacheInvalidator
             }
             $this->remember($entity->getProduct());
             $this->remember($entity->getVariant()?->getProduct());
-            foreach ($unitOfWork->getEntityChangeSet($entity) as $field => [$old]) {
-                if ('product' === $field) {
-                    $this->remember($old);
-                } elseif ('variant' === $field && $old instanceof \Sylius\Component\Product\Model\ProductVariantInterface) {
-                    $this->remember($old->getProduct());
-                }
+            $changeSet = $unitOfWork->getEntityChangeSet($entity);
+            if (is_array($changeSet['product'] ?? null)) {
+                $this->remember($changeSet['product'][0] ?? null);
+            }
+            $oldVariant = is_array($changeSet['variant'] ?? null) ? ($changeSet['variant'][0] ?? null) : null;
+            if ($oldVariant instanceof ProductVariantInterface) {
+                $this->remember($oldVariant->getProduct());
             }
         }
     }

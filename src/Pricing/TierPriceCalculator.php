@@ -71,16 +71,19 @@ final class TierPriceCalculator implements TierPriceCalculatorInterface
         }
 
         $current = $this->context($variant, $customerGroup, $lineQuantity, $productQuantity);
-        $currentUnitPrice = $this->quoteFor($rules, $current, $variant, $channel, null)?->unitPrice ?? $unitPrice;
+        $currentUnitPrice = $this->quoteFor($rules, $current, $variant, $channel, null)->unitPrice ?? $unitPrice;
 
         return new TierPriceTable($rows, $this->nudge($rules, $current, $variant, $channel, $currentUnitPrice), $currentUnitPrice);
     }
 
-    /** Smallest quantity to add (of this variant) for a lower unit price. */
+    /**
+     * Smallest quantity to add (of this variant) for a lower unit price.
+     *
+     * @param list<TierPriceRuleData> $rules
+     */
     private function nudge(array $rules, TierPriceContext $current, ProductVariantInterface $variant, ChannelInterface $channel, int $currentUnitPrice): ?TierPriceNudge
     {
         $best = null;
-        /** @var list<TierPriceRuleData> $rules */
         foreach ($rules as $rule) {
             $quantity = TierPriceRuleInterface::BASIS_PRODUCT === $rule->quantityBasis ? $current->productQuantity : $current->lineQuantity;
             $toAdd = $rule->minQuantity - $quantity;
@@ -128,7 +131,10 @@ final class TierPriceCalculator implements TierPriceCalculatorInterface
 
     private function context(ProductVariantInterface $variant, ?CustomerGroupInterface $customerGroup, int $lineQuantity, int $productQuantity): TierPriceContext
     {
-        return new TierPriceContext((int) $variant->getId(), $customerGroup?->getId(), $lineQuantity, $productQuantity, $this->clock->now());
+        $variantId = $variant->getId();
+        $groupId = $customerGroup?->getId();
+
+        return new TierPriceContext(is_int($variantId) ? $variantId : 0, is_int($groupId) ? $groupId : null, $lineQuantity, $productQuantity, $this->clock->now());
     }
 
     /**

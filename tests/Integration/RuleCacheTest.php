@@ -56,7 +56,9 @@ final class RuleCacheTest extends KernelTestCase
 
         // Nothing is kept between requests of a long-running process either.
         $this->provider()->getRules($channel, $product, null);
-        self::getContainer()->get('services_resetter')->reset();
+        $resetter = self::getContainer()->get('services_resetter');
+        self::assertInstanceOf(\Symfony\Contracts\Service\ResetInterface::class, $resetter);
+        $resetter->reset();
         self::assertCount(1, $this->provider()->getRules($channel, $product, null));
     }
 
