@@ -9,7 +9,7 @@
     <resource class="%tmonier_tier_pricing.model.tier_price_rule.class%" shortName="TierPriceRule">
         <operations>
             <operation
-                name="tmonier_tier_pricing_admin_tier_price_rule_get_collection"
+                name="tmonier_tier_pricing_api_admin_tier_price_rule_get_collection"
                 class="ApiPlatform\Metadata\GetCollection"
                 uriTemplate="/admin/tier-price-rules"
             >
@@ -25,7 +25,7 @@
             </operation>
 
             <operation
-                name="tmonier_tier_pricing_admin_tier_price_rule_get"
+                name="tmonier_tier_pricing_api_admin_tier_price_rule_get"
                 class="ApiPlatform\Metadata\Get"
                 uriTemplate="/admin/tier-price-rules/{id}"
             >
@@ -41,7 +41,7 @@
             </operation>
 
             <operation
-                name="tmonier_tier_pricing_admin_tier_price_rule_post"
+                name="tmonier_tier_pricing_api_admin_tier_price_rule_post"
                 class="ApiPlatform\Metadata\Post"
                 uriTemplate="/admin/tier-price-rules"
             >
@@ -75,7 +75,7 @@
             </operation>
 
             <operation
-                name="tmonier_tier_pricing_admin_tier_price_rule_put"
+                name="tmonier_tier_pricing_api_admin_tier_price_rule_put"
                 class="ApiPlatform\Metadata\Put"
                 uriTemplate="/admin/tier-price-rules/{id}"
             >
@@ -109,7 +109,7 @@
             </operation>
 
             <operation
-                name="tmonier_tier_pricing_admin_tier_price_rule_delete"
+                name="tmonier_tier_pricing_api_admin_tier_price_rule_delete"
                 class="ApiPlatform\Metadata\Delete"
                 uriTemplate="/admin/tier-price-rules/{id}"
             />

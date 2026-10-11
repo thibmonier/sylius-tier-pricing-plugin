@@ -8,7 +8,7 @@
     <resource class="Tmonier\SyliusTierPricingPlugin\Api\TierPriceTableView" shortName="TierPriceTable">
         <operations>
             <operation
-                name="tmonier_tier_pricing_shop_variant_tier_prices_get"
+                name="tmonier_tier_pricing_api_shop_variant_tier_prices_get"
                 class="ApiPlatform\Metadata\Get"
                 uriTemplate="/shop/product-variants/{code}/tier-prices"
                 provider="tmonier_tier_pricing.api.tier_price_table_provider"
