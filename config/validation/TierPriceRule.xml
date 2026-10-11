@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<constraint-mapping xmlns="http://symfony.com/schema/dic/constraint-mapping"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xsi:schemaLocation="http://symfony.com/schema/dic/constraint-mapping http://symfony.com/schema/dic/services/constraint-mapping-1.0.xsd">
+    <class name="Tmonier\SyliusTierPricingPlugin\Entity\TierPriceRule">
+        <constraint name="Tmonier\SyliusTierPricingPlugin\Validator\ValidTierPriceRule">
+            <option name="groups">sylius</option>
+        </constraint>
+        <property name="channel">
+            <constraint name="NotNull">
+                <option name="message">tmonier_tier_pricing.tier_price_rule.channel_required</option>
+                <option name="groups">sylius</option>
+            </constraint>
+        </property>
+        <property name="scope">
+            <constraint name="Choice">
+                <option name="choices">
+                    <value>variant</value>
+                    <value>product</value>
+                </option>
+                <option name="groups">sylius</option>
+            </constraint>
+        </property>
+        <property name="quantityBasis">
+            <constraint name="Choice">
+                <option name="choices">
+                    <value>line</value>
+                    <value>product</value>
+                </option>
+                <option name="groups">sylius</option>
+            </constraint>
+        </property>
+        <property name="type">
+            <constraint name="Choice">
+                <option name="choices">
+                    <value>fixed_unit_price</value>
+                    <value>percentage_off</value>
+                </option>
+                <option name="groups">sylius</option>
+            </constraint>
+        </property>
+        <property name="minQuantity">
+            <constraint name="Range">
+                <option name="min">2</option>
+                <option name="max">1000000</option>
+                <option name="notInRangeMessage">tmonier_tier_pricing.tier_price_rule.min_quantity_range</option>
+                <option name="groups">sylius</option>
+            </constraint>
+        </property>
+    </class>
+</constraint-mapping>

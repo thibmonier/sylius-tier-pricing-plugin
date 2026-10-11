@@ -1,0 +1,5 @@
+{% if data.startsAt is null and data.endsAt is null %}
+    <span class="text-secondary">{{ 'tmonier_tier_pricing.ui.always'|trans }}</span>
+{% else %}
+    <span class="text-nowrap">{{ data.startsAt ? data.startsAt|date('Y-m-d H:i') : '…' }} → {{ data.endsAt ? data.endsAt|date('Y-m-d H:i') : '…' }}</span>
+{% endif %}

@@ -1,0 +1,10 @@
+tmonier_tier_pricing:
+    tier_price_rule:
+        target_missing: 'Wybierz produkt lub wariant reguły.'
+        target_mismatch: 'Tylko produkt lub wariant, zgodnie z polem „Dotyczy”.'
+        percentage_range: 'Procent musi mieścić się między 0,01 a 100.'
+        amount_positive: 'Podaj cenę jednostkową równą 0 lub wyższą.'
+        dates_order: 'Koniec musi być po początku.'
+        duplicate: 'Reguła od %quantity% szt. dla tego produktu, kanału i grupy klientów już istnieje w tym okresie.'
+        channel_required: 'Wybierz kanał.'
+        min_quantity_range: 'Ilość musi mieścić się między {{ min }} a {{ max }}.'

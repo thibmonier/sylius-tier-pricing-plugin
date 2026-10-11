@@ -1,0 +1,12 @@
+{% set rule = data %}
+{% if rule.scope == 'variant' and rule.variant is not null %}
+    <div {{ sylius_test_html_attribute('tmonier-tier-rule-target', rule.variant.code) }}>
+        <a href="{{ path('sylius_admin_product_update', {id: rule.variant.product.id}) }}">{{ rule.variant.product.name|default(rule.variant.product.code) }}</a>
+        <div class="text-secondary small">{{ 'sylius.ui.variant'|trans }}: {{ rule.variant.name|default(rule.variant.code) }} ({{ rule.variant.code }})</div>
+    </div>
+{% elseif rule.product is not null %}
+    <div {{ sylius_test_html_attribute('tmonier-tier-rule-target', rule.product.code) }}>
+        <a href="{{ path('sylius_admin_product_update', {id: rule.product.id}) }}">{{ rule.product.name|default(rule.product.code) }}</a>
+        <div class="text-secondary small">{{ 'tmonier_tier_pricing.scope.product'|trans }} ({{ rule.product.code }})</div>
+    </div>
+{% endif %}

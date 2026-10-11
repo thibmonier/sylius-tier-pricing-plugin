@@ -1,0 +1,7 @@
+{# A rule value: "-10 %" or "12,50 €" (channel base currency). #}
+{% import '@SyliusAdmin/shared/helper/money.html.twig' as money %}
+{% if rule.type == 'percentage_off' %}
+    <span {{ sylius_test_html_attribute('tmonier-tier-rule-value') }}>-{{ (rule.value / 100)|number_format(2)|trim('0', 'right')|trim('.', 'right') }} %</span>
+{% else %}
+    <span {{ sylius_test_html_attribute('tmonier-tier-rule-value') }}>{{ money.format(rule.value, rule.channel.baseCurrency.code|default('EUR')) }}</span>
+{% endif %}

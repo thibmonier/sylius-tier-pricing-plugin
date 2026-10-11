@@ -1,0 +1,5 @@
+{% if data.customerGroup is not null %}
+    <span class="badge bg-azure-lt">{{ data.customerGroup.name|default(data.customerGroup.code) }}</span>
+{% else %}
+    <span class="text-secondary">{{ 'tmonier_tier_pricing.form.all_customers'|trans }}</span>
+{% endif %}

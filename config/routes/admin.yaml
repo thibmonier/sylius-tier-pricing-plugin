@@ -1,0 +1,38 @@
+tmonier_tier_pricing_admin_tier_price_rule:
+    resource: |
+        alias: tmonier_tier_pricing.tier_price_rule
+        section: admin
+        templates: "@SyliusAdmin\\shared\\crud"
+        except: ['show']
+        redirect: index
+        grid: tmonier_tier_pricing_admin_tier_price_rule
+        form:
+            type: Tmonier\SyliusTierPricingPlugin\Form\Type\TierPriceRuleType
+        permission: true
+        path: tier-price-rules
+        vars:
+            all:
+                hook_prefix: tmonier_tier_pricing_admin.tier_price_rule
+    type: sylius.resource
+
+# "Add rule" from the "Volume pricing" tab of a product: same page, product pre-selected.
+tmonier_tier_pricing_admin_tier_price_rule_create_for_product:
+    path: /tier-price-rules/new/product/{productId}
+    methods: [GET, POST]
+    requirements:
+        productId: '\d+'
+    defaults:
+        _controller: tmonier_tier_pricing.controller.tier_price_rule::createAction
+        _sylius:
+            section: admin
+            permission: true
+            template: "@SyliusAdmin/shared/crud/create.html.twig"
+            form: Tmonier\SyliusTierPricingPlugin\Form\Type\TierPriceRuleType
+            vars:
+                hook_prefix: tmonier_tier_pricing_admin.tier_price_rule
+            factory:
+                method: createForProduct
+                arguments: [$productId]
+            redirect:
+                route: sylius_admin_product_update
+                parameters: { id: $productId }

@@ -1,0 +1,52 @@
+{% set product = hookable_metadata.context.resource %}
+{% set rules = tmonier_tier_pricing_rules_of_product(product) %}
+
+{# Inside the product form: links only, no nested form. #}
+<div class="tab-pane" id="product-tmonier-tier-pricing" role="tabpanel" tabindex="0" {{ sylius_test_html_attribute('tmonier-tier-pricing-tab') }}>
+    <div class="card mb-3">
+        <div class="card-header">
+            <h2 class="card-title">{{ 'tmonier_tier_pricing.ui.volume_pricing'|trans }}</h2>
+            <div class="card-actions">
+                <a href="{{ path('tmonier_tier_pricing_admin_tier_price_rule_create_for_product', {productId: product.id}) }}" class="btn btn-primary btn-sm" {{ sylius_test_html_attribute('tmonier-tier-pricing-add') }}>
+                    {{ ux_icon('tabler:plus') }} {{ 'tmonier_tier_pricing.ui.add_rule'|trans }}
+                </a>
+            </div>
+        </div>
+        {% if rules is empty %}
+            <div class="card-body text-secondary">{{ 'tmonier_tier_pricing.ui.no_rules'|trans }}</div>
+        {% else %}
+            <div class="table-responsive">
+                <table class="table card-table table-vcenter">
+                    <thead>
+                        <tr>
+                            <th>{{ 'sylius.ui.channel'|trans }}</th>
+                            <th>{{ 'tmonier_tier_pricing.ui.target'|trans }}</th>
+                            <th>{{ 'sylius.ui.customer_group'|trans }}</th>
+                            <th class="text-end">{{ 'tmonier_tier_pricing.ui.min_quantity'|trans }}</th>
+                            <th class="text-end">{{ 'tmonier_tier_pricing.ui.price'|trans }}</th>
+                            <th>{{ 'tmonier_tier_pricing.ui.quantity_basis'|trans }}</th>
+                            <th>{{ 'sylius.ui.enabled'|trans }}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rule in rules %}
+                            <tr {{ sylius_test_html_attribute('tmonier-tier-pricing-rule', rule.id) }}>
+                                <td>{{ rule.channel.name|default(rule.channel.code) }}</td>
+                                <td>{{ rule.scope == 'variant' ? rule.variant.name|default(rule.variant.code) : 'tmonier_tier_pricing.ui.all_variants'|trans }}</td>
+                                <td>{{ rule.customerGroup ? rule.customerGroup.name|default(rule.customerGroup.code) : 'tmonier_tier_pricing.form.all_customers'|trans }}</td>
+                                <td class="text-end">{{ rule.minQuantity }}</td>
+                                <td class="text-end">{% include '@TmonierSyliusTierPricingPlugin/shared/rule_value.html.twig' with { rule } only %}</td>
+                                <td>{{ ('tmonier_tier_pricing.basis.' ~ rule.quantityBasis)|trans }}</td>
+                                <td>{{ rule.enabled ? 'sylius.ui.yes_label'|trans : 'sylius.ui.no_label'|trans }}</td>
+                                <td class="text-end">
+                                    <a href="{{ path('tmonier_tier_pricing_admin_tier_price_rule_update', {id: rule.id}) }}" class="btn btn-sm">{{ 'sylius.ui.edit'|trans }}</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+</div>

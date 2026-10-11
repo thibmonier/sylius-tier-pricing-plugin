@@ -1,0 +1,8 @@
+# Import this file from your application's config/routes:
+#
+# tmonier_sylius_tier_pricing:
+#     resource: "@TmonierSyliusTierPricingPlugin/config/routes.yaml"
+
+tmonier_tier_pricing_admin:
+    resource: "@TmonierSyliusTierPricingPlugin/config/routes/admin.yaml"
+    prefix: '/%sylius_admin.path_name%'

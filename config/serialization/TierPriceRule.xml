@@ -1,0 +1,92 @@
+<?xml version="1.0" ?>
+
+<serializer xmlns="http://symfony.com/schema/dic/serializer-mapping"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="http://symfony.com/schema/dic/serializer-mapping https://symfony.com/schema/dic/serializer-mapping/serializer-mapping-1.0.xsd"
+>
+    <!-- value: cents for fixed_unit_price, basis points (1000 = 10 %) for percentage_off. -->
+    <class name="Tmonier\SyliusTierPricingPlugin\Entity\TierPriceRule">
+        <attribute name="id">
+            <group>tmonier_tier_pricing:admin:tier_price_rule:index</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:show</group>
+        </attribute>
+        <attribute name="createdAt">
+            <group>tmonier_tier_pricing:admin:tier_price_rule:show</group>
+        </attribute>
+        <attribute name="updatedAt">
+            <group>tmonier_tier_pricing:admin:tier_price_rule:show</group>
+        </attribute>
+        <attribute name="channel">
+            <group>tmonier_tier_pricing:admin:tier_price_rule:index</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:show</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:create</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:update</group>
+        </attribute>
+        <attribute name="customerGroup">
+            <group>tmonier_tier_pricing:admin:tier_price_rule:index</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:show</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:create</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:update</group>
+        </attribute>
+        <attribute name="scope">
+            <group>tmonier_tier_pricing:admin:tier_price_rule:index</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:show</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:create</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:update</group>
+        </attribute>
+        <attribute name="product">
+            <group>tmonier_tier_pricing:admin:tier_price_rule:index</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:show</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:create</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:update</group>
+        </attribute>
+        <attribute name="variant">
+            <group>tmonier_tier_pricing:admin:tier_price_rule:index</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:show</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:create</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:update</group>
+        </attribute>
+        <attribute name="quantityBasis">
+            <group>tmonier_tier_pricing:admin:tier_price_rule:index</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:show</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:create</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:update</group>
+        </attribute>
+        <attribute name="minQuantity">
+            <group>tmonier_tier_pricing:admin:tier_price_rule:index</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:show</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:create</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:update</group>
+        </attribute>
+        <attribute name="type">
+            <group>tmonier_tier_pricing:admin:tier_price_rule:index</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:show</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:create</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:update</group>
+        </attribute>
+        <attribute name="value">
+            <group>tmonier_tier_pricing:admin:tier_price_rule:index</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:show</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:create</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:update</group>
+        </attribute>
+        <attribute name="enabled">
+            <group>tmonier_tier_pricing:admin:tier_price_rule:index</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:show</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:create</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:update</group>
+        </attribute>
+        <attribute name="startsAt">
+            <group>tmonier_tier_pricing:admin:tier_price_rule:index</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:show</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:create</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:update</group>
+        </attribute>
+        <attribute name="endsAt">
+            <group>tmonier_tier_pricing:admin:tier_price_rule:index</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:show</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:create</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:update</group>
+        </attribute>
+    </class>
+</serializer>

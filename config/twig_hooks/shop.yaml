@@ -1,0 +1,15 @@
+sylius_twig_hooks:
+    hooks:
+        # Product page: tier table and "add N more" nudge, between the quantity and the button.
+        # Rendered (and re-rendered on variant change) by the AddToCartFormComponent.
+        'sylius_shop.product.show.content.info.summary.add_to_cart':
+            tmonier_tier_pricing:
+                template: '@TmonierSyliusTierPricingPlugin/shop/product/tier_prices.html.twig'
+                priority: 50
+
+        # Cart: the unit price cell shows the tier applied and the next one; the regular price is
+        # not struck through for a tier price (see OrderItemOriginalPriceToDisplayExtension).
+        'sylius_shop.cart.index.content.form.sections.general.items.body':
+            unit_price:
+                template: '@TmonierSyliusTierPricingPlugin/shop/cart/unit_price.html.twig'
+                priority: 200

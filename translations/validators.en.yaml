@@ -1,0 +1,10 @@
+tmonier_tier_pricing:
+    tier_price_rule:
+        target_missing: 'Choose the product or the variant of the rule.'
+        target_mismatch: 'Only the product or the variant, as chosen in "Applies to".'
+        percentage_range: 'The percentage must be between 0.01 and 100.'
+        amount_positive: 'Enter a unit price of 0 or more.'
+        dates_order: 'The end must be after the start.'
+        duplicate: 'A rule from %quantity% pieces already exists for this product, channel and customer group over this period.'
+        channel_required: 'Choose a channel.'
+        min_quantity_range: 'The quantity must be between {{ min }} and {{ max }}.'

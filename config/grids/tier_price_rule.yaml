@@ -1,0 +1,86 @@
+sylius_grid:
+    grids:
+        tmonier_tier_pricing_admin_tier_price_rule:
+            driver:
+                name: doctrine/orm
+                options:
+                    class: "%tmonier_tier_pricing.model.tier_price_rule.class%"
+                    repository:
+                        method: createListQueryBuilder
+            sorting:
+                id: desc
+            fields:
+                target:
+                    type: twig
+                    label: tmonier_tier_pricing.ui.target
+                    path: .
+                    options:
+                        template: "@TmonierSyliusTierPricingPlugin/admin/tier_price_rule/grid/field/target.html.twig"
+                        vars:
+                            th_class: "w-100"
+                channel:
+                    type: twig
+                    label: sylius.ui.channel
+                    sortable: channel.code
+                    options:
+                        template: "@SyliusAdmin/shared/grid/field/channel.html.twig"
+                customerGroup:
+                    type: twig
+                    label: sylius.ui.customer_group
+                    path: .
+                    options:
+                        template: "@TmonierSyliusTierPricingPlugin/admin/tier_price_rule/grid/field/customer_group.html.twig"
+                minQuantity:
+                    type: string
+                    label: tmonier_tier_pricing.ui.min_quantity
+                    sortable: ~
+                value:
+                    type: twig
+                    label: tmonier_tier_pricing.ui.price
+                    path: .
+                    options:
+                        template: "@TmonierSyliusTierPricingPlugin/admin/tier_price_rule/grid/field/value.html.twig"
+                quantityBasis:
+                    type: twig
+                    label: tmonier_tier_pricing.ui.quantity_basis
+                    path: .
+                    options:
+                        template: "@TmonierSyliusTierPricingPlugin/admin/tier_price_rule/grid/field/quantity_basis.html.twig"
+                period:
+                    type: twig
+                    label: tmonier_tier_pricing.ui.period
+                    path: .
+                    options:
+                        template: "@TmonierSyliusTierPricingPlugin/admin/tier_price_rule/grid/field/period.html.twig"
+                enabled:
+                    type: twig
+                    label: sylius.ui.enabled
+                    sortable: ~
+                    options:
+                        template: "@SyliusAdmin/shared/grid/field/boolean.html.twig"
+            filters:
+                search:
+                    type: string
+                    label: sylius.ui.search
+                    options:
+                        fields: [product.code, variant.code]
+                channel:
+                    type: entity
+                    label: sylius.ui.channel
+                    form_options:
+                        class: "%sylius.model.channel.class%"
+                enabled:
+                    type: boolean
+                    label: sylius.ui.enabled
+            actions:
+                main:
+                    create:
+                        type: create
+                item:
+                    update:
+                        type: update
+                    delete:
+                        type: delete
+                bulk:
+                    delete:
+                        type: delete

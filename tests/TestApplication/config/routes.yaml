@@ -1,0 +1,2 @@
+tmonier_sylius_tier_pricing:
+    resource: "@TmonierSyliusTierPricingPlugin/config/routes.yaml"

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:gedmo="http://gediminasm.org/schemas/orm/doctrine-extensions-mapping">
+
+    <mapped-superclass name="Tmonier\SyliusTierPricingPlugin\Entity\TierPriceRule" table="tmonier_tier_price_rule">
+        <indexes>
+            <index name="tmonier_tier_price_rule_lookup_idx" columns="channel_id,product_id,enabled" />
+            <index name="tmonier_tier_price_rule_variant_lookup_idx" columns="channel_id,variant_id,enabled" />
+        </indexes>
+
+        <id name="id" column="id" type="integer">
+            <generator strategy="AUTO" />
+        </id>
+
+        <field name="scope" column="scope" type="string" length="16" />
+        <field name="quantityBasis" column="quantity_basis" type="string" length="16" />
+        <field name="minQuantity" column="min_quantity" type="integer" />
+        <field name="type" column="type" type="string" length="32" />
+        <field name="value" column="value" type="integer" />
+        <field name="enabled" column="enabled" type="boolean" />
+        <field name="startsAt" column="starts_at" type="datetime" nullable="true" />
+        <field name="endsAt" column="ends_at" type="datetime" nullable="true" />
+        <field name="createdAt" column="created_at" type="datetime">
+            <gedmo:timestampable on="create" />
+        </field>
+        <field name="updatedAt" column="updated_at" type="datetime" nullable="true">
+            <gedmo:timestampable on="update" />
+        </field>
+
+        <many-to-one field="channel" target-entity="Sylius\Component\Channel\Model\ChannelInterface">
+            <join-column name="channel_id" referenced-column-name="id" nullable="false" on-delete="CASCADE" />
+        </many-to-one>
+
+        <many-to-one field="customerGroup" target-entity="Sylius\Component\Customer\Model\CustomerGroupInterface">
+            <join-column name="customer_group_id" referenced-column-name="id" nullable="true" on-delete="CASCADE" />
+        </many-to-one>
+
+        <many-to-one field="product" target-entity="Sylius\Component\Product\Model\ProductInterface">
+            <join-column name="product_id" referenced-column-name="id" nullable="true" on-delete="CASCADE" />
+        </many-to-one>
+
+        <many-to-one field="variant" target-entity="Sylius\Component\Product\Model\ProductVariantInterface">
+            <join-column name="variant_id" referenced-column-name="id" nullable="true" on-delete="CASCADE" />
+        </many-to-one>
+    </mapped-superclass>
+
+</doctrine-mapping>

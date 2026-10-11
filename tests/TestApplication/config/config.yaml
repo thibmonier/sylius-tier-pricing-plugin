@@ -1,0 +1,16 @@
+imports:
+    - { resource: "@TmonierSyliusTierPricingPlugin/config/config.yaml" }
+
+tmonier_sylius_tier_pricing:
+    # Functional tests switch a channel to B2B (prices without taxes) through this list.
+    b2b_channels: ['TMONIER_B2B']
+
+# Demo price breaks on the first products of every channel (dev and test databases).
+sylius_fixtures:
+    suites:
+        default:
+            fixtures:
+                tmonier_tier_pricing:
+                    priority: -100
+                    options:
+                        amount: 12

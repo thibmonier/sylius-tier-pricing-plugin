@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<resources
+    xmlns="https://api-platform.com/schema/metadata/resources-3.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="https://api-platform.com/schema/metadata/resources-3.0 https://api-platform.com/schema/metadata/resources-3.0.xsd"
+>
+    <!-- Admin CRUD of the tier price rules: /api/v2/admin/tier-price-rules (ROLE_API_ACCESS, as every admin endpoint). -->
+    <resource class="%tmonier_tier_pricing.model.tier_price_rule.class%" shortName="TierPriceRule">
+        <operations>
+            <operation
+                name="tmonier_tier_pricing_admin_tier_price_rule_get_collection"
+                class="ApiPlatform\Metadata\GetCollection"
+                uriTemplate="/admin/tier-price-rules"
+            >
+                <normalizationContext>
+                    <values>
+                        <value name="groups">
+                            <values>
+                                <value>tmonier_tier_pricing:admin:tier_price_rule:index</value>
+                            </values>
+                        </value>
+                    </values>
+                </normalizationContext>
+            </operation>
+
+            <operation
+                name="tmonier_tier_pricing_admin_tier_price_rule_get"
+                class="ApiPlatform\Metadata\Get"
+                uriTemplate="/admin/tier-price-rules/{id}"
+            >
+                <normalizationContext>
+                    <values>
+                        <value name="groups">
+                            <values>
+                                <value>tmonier_tier_pricing:admin:tier_price_rule:show</value>
+                            </values>
+                        </value>
+                    </values>
+                </normalizationContext>
+            </operation>
+
+            <operation
+                name="tmonier_tier_pricing_admin_tier_price_rule_post"
+                class="ApiPlatform\Metadata\Post"
+                uriTemplate="/admin/tier-price-rules"
+            >
+                <denormalizationContext>
+                    <values>
+                        <value name="groups">
+                            <values>
+                                <value>tmonier_tier_pricing:admin:tier_price_rule:create</value>
+                            </values>
+                        </value>
+                    </values>
+                </denormalizationContext>
+                <normalizationContext>
+                    <values>
+                        <value name="groups">
+                            <values>
+                                <value>tmonier_tier_pricing:admin:tier_price_rule:show</value>
+                            </values>
+                        </value>
+                    </values>
+                </normalizationContext>
+                <validationContext>
+                    <values>
+                        <value name="groups">
+                            <values>
+                                <value>sylius</value>
+                            </values>
+                        </value>
+                    </values>
+                </validationContext>
+            </operation>
+
+            <operation
+                name="tmonier_tier_pricing_admin_tier_price_rule_put"
+                class="ApiPlatform\Metadata\Put"
+                uriTemplate="/admin/tier-price-rules/{id}"
+            >
+                <denormalizationContext>
+                    <values>
+                        <value name="groups">
+                            <values>
+                                <value>tmonier_tier_pricing:admin:tier_price_rule:update</value>
+                            </values>
+                        </value>
+                    </values>
+                </denormalizationContext>
+                <normalizationContext>
+                    <values>
+                        <value name="groups">
+                            <values>
+                                <value>tmonier_tier_pricing:admin:tier_price_rule:show</value>
+                            </values>
+                        </value>
+                    </values>
+                </normalizationContext>
+                <validationContext>
+                    <values>
+                        <value name="groups">
+                            <values>
+                                <value>sylius</value>
+                            </values>
+                        </value>
+                    </values>
+                </validationContext>
+            </operation>
+
+            <operation
+                name="tmonier_tier_pricing_admin_tier_price_rule_delete"
+                class="ApiPlatform\Metadata\Delete"
+                uriTemplate="/admin/tier-price-rules/{id}"
+            />
+        </operations>
+    </resource>
+</resources>
