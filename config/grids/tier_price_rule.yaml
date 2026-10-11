@@ -8,7 +8,7 @@ sylius_grid:
                     repository:
                         method: createListQueryBuilder
             sorting:
-                id: desc
+                minQuantity: asc
             fields:
                 target:
                     type: twig

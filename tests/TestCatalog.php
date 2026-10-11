@@ -199,7 +199,8 @@ final class TestCatalog
         $order->setChannel($channel);
         $order->setLocaleCode((string) $channel->getDefaultLocale()?->getCode());
         $order->setCurrencyCode((string) $channel->getBaseCurrency()?->getCode());
-        $order->setCustomer($customer);
+        // "With authorization": found by the cart context of the logged-in customer.
+        $order->setCustomerWithAuthorization($customer);
         foreach ($lines as [$variant, $quantity]) {
             $item = $itemFactory->createNew();
             $item->setVariant($variant);
