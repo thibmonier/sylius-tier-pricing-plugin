@@ -43,8 +43,9 @@ server: `symfony server:start -d --port=8092 --no-tls` (admin `sylius` / `sylius
   the quote lock at 45 of tmonier/sylius-quote-request-plugin), skips immutable and exempt
   lines (`TierPriceExemptionCheckerInterface`, composite), neutral `tmonier_tier_price`
   adjustment as marker. Never writes `ChannelPricing`.
-- Group rules: `Pricing/OrderCustomerGroupResolver` (signed-in customers only unless
-  `group_prices_for_guests`). In consumer channels the processor also sets `originalUnitPrice`
+- Group rules: `Pricing/OrderCustomerGroupResolver`: in shop / shop API sections (Sylius
+  section provider) only for the signed-in customer unless `group_prices_for_guests`; admin,
+  admin API and console always use the order customer's group. In consumer channels the processor also sets `originalUnitPrice`
   of tier lines to the tier price (shop API shows no reduction).
 - Display: `Twig/TierPricingExtension` (table, cart table, tax convention, percentage; skips
   exempt lines), `Pricing/PriceDisplayResolver` (tax convention label, amounts shown as stored;

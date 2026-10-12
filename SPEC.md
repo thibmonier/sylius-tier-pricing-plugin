@@ -62,8 +62,11 @@ Brille24 importer, Sylius Plus cohabitation (not testable offline).
 ### 3.2 Resolution (`TierPriceResolver`, pure)
 
 Candidates: enabled rules of the product in the channel, for everybody or the customer's group
-(group rules only for signed-in customers by default: a guest typing the e-mail of an existing
-B2B customer at checkout gets that customer attached by Sylius). A rule applies when its target
+(in shop and shop API requests, group rules only for the signed-in customer by default: a
+guest typing the e-mail of an existing B2B customer at checkout gets that customer attached by
+Sylius; in admin, admin API and console contexts, e.g. orders created on behalf of a customer,
+the group of the order's customer applies. A first version keyed on `createdByGuest` dropped
+the group of orders created with `setCustomer()` in the admin, hence the section check). A rule applies when its target
 matches, its threshold is reached for its quantity basis and it is active now. Each applicable
 rule gives a price: fixed value or `round_half_up(base × (1 − p))` where `base` is the regular
 price (`originalPrice` when a catalog promotion is applied, else the price), then
@@ -147,7 +150,7 @@ for each threshold: what is shown is what is charged (`OrderProcessingTest`, res
 | Group targeting vs RFQ group discounts | Kept separate (memo §3). |
 | Catalog promotion stacking | Best of only (v1). |
 | Taxes in display | As stored + label from the channel default tax zone (documented limitation). |
-| Core display of catalog promotions | Unchanged: Sylius strikes `originalPrice` through; merchants keep it equal to the 30-day lowest price or override the templates (README, Legal notes). |
+| Core display of catalog promotions | Unchanged: Sylius strikes `originalPrice` through on the product page and cart (lowest price line on the product page only) and on product cards (lists, homepage, related products, without the lowest price line); merchants keep it equal to the 30-day lowest price or override the templates (README, Legal notes). |
 | Multi-node cache | Pool on `cache.app`: must be shared (Redis) with several nodes, or `cache_ttl: 0` (README). |
 
 Not verified: tiers in Sylius Plus price lists (closed docs); primary text of 2021/C 526/02;

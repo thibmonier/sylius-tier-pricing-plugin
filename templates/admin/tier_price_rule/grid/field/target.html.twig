@@ -1,4 +1,4 @@
-{# Product names are loaded once per product (the list query joins every to-one association). #}
+{# Products and their admin-locale translation come with the list query (no query per row). #}
 {% set rule = data %}
 {% if rule.scope == 'variant' and rule.variant is not null %}
     <div {{ sylius_test_html_attribute('tmonier-tier-rule-target', rule.variant.code) }}>

@@ -128,7 +128,46 @@ final class OrderProcessingTest extends KernelTestCase
         }
     }
 
-    public function testGroupPricesNeedASignedInCustomer(): void
+    public function testInTheShopGroupPricesNeedTheSignedInCustomer(): void
+    {
+        [$channel, $variant, $customer] = $this->groupScenario();
+        // A shop request without signed-in customer (guest checkout typing the e-mail of an
+        // existing group customer: Sylius attaches that customer to the order).
+        $this->pushRequest('/en_US/checkout/address');
+
+        $order = $this->catalog()->cart($channel, [[$variant, 10]], flush: false);
+        $order->setCustomer($customer);
+        $this->catalog()->process($order);
+        self::assertSame(900, $this->catalog()->item($order, $variant)->getUnitPrice());
+
+        // Same in the shop API.
+        $this->pushRequest('/api/v2/shop/orders/abc');
+        $this->catalog()->process($order);
+        self::assertSame(900, $this->catalog()->item($order, $variant)->getUnitPrice());
+    }
+
+    public function testOrdersCreatedOnBehalfOfACustomerGetItsGroupPrices(): void
+    {
+        [$channel, $variant, $customer] = $this->groupScenario();
+
+        // Admin order creation, quote conversion, imports: setCustomer(), createdByGuest stays true.
+        $order = $this->catalog()->cart($channel, [[$variant, 10]], flush: false);
+        $order->setCustomer($customer);
+        self::assertTrue($order->isCreatedByGuest());
+        $this->catalog()->process($order);
+        self::assertSame(700, $this->catalog()->item($order, $variant)->getUnitPrice(), 'console');
+
+        $this->pushRequest('/admin/orders/new');
+        $this->catalog()->process($order);
+        self::assertSame(700, $this->catalog()->item($order, $variant)->getUnitPrice(), 'admin');
+
+        $this->pushRequest('/api/v2/admin/orders');
+        $this->catalog()->process($order);
+        self::assertSame(700, $this->catalog()->item($order, $variant)->getUnitPrice(), 'admin API');
+    }
+
+    /** @return array{\Sylius\Component\Core\Model\ChannelInterface, \Sylius\Component\Core\Model\ProductVariantInterface, CustomerInterface} */
+    private function groupScenario(): array
     {
         $channel = $this->catalog()->channel();
         $product = $this->catalog()->product($channel, [1000]);
@@ -136,19 +175,17 @@ final class OrderProcessingTest extends KernelTestCase
         $group = $this->catalog()->customerGroup();
         $this->catalog()->rule($channel, $product, 10, TierPriceRuleInterface::TYPE_PERCENTAGE_OFF, 1000);
         $this->catalog()->rule($channel, $product, 10, TierPriceRuleInterface::TYPE_PERCENTAGE_OFF, 3000, $group);
-        $customer = $this->customerOfGroup($group);
 
-        // Guest checkout with the e-mail of an existing group customer: Sylius attaches the
-        // customer to the order, but the order stays "created by guest".
-        $order = $this->catalog()->cart($channel, [[$variant, 10]], flush: false);
-        $order->setCustomer($customer);
-        self::assertTrue($order->isCreatedByGuest());
-        $this->catalog()->process($order);
-        self::assertSame(900, $this->catalog()->item($order, $variant)->getUnitPrice());
+        return [$channel, $variant, $this->customerOfGroup($group)];
+    }
 
-        $order = $this->catalog()->cart($channel, [[$variant, 10]], $customer, flush: false);
-        self::assertFalse($order->isCreatedByGuest());
-        self::assertSame(700, $this->catalog()->item($order, $variant)->getUnitPrice());
+    private function pushRequest(string $uri): void
+    {
+        $stack = self::getContainer()->get('request_stack');
+        self::assertInstanceOf(\Symfony\Component\HttpFoundation\RequestStack::class, $stack);
+        while (null !== $stack->pop()) {
+        }
+        $stack->push(\Symfony\Component\HttpFoundation\Request::create($uri));
     }
 
     public function testTheRegularPriceIsNotExposedAsTheOriginalPriceOfATierLine(): void

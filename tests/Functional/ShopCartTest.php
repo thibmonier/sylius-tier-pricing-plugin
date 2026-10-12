@@ -102,4 +102,22 @@ final class ShopCartTest extends WebTestCase
         self::assertStringContainsString('Add 6 more to pay', $nudges->text());
         self::assertCount(0, $crawler->filter('[data-test-tmonier-tier-applied]'));
     }
+
+    public function testTheSignedInCustomerGetsItsGroupPrices(): void
+    {
+        $channel = $this->catalog()->channel();
+        $product = $this->catalog()->product($channel, [1000]);
+        $group = $this->catalog()->customerGroup();
+        $this->catalog()->rule($channel, $product, 10, TierPriceRuleInterface::TYPE_PERCENTAGE_OFF, 1000);
+        $this->catalog()->rule($channel, $product, 10, TierPriceRuleInterface::TYPE_PERCENTAGE_OFF, 3000, $group);
+        $customer = $this->loginShopCustomer();
+        $customer->setGroup($group);
+        $this->catalog()->cart($channel, [[$this->catalog()->variant($product), 10]], $customer);
+
+        $crawler = $this->client->request('GET', $this->shopUrl('/cart/'));
+
+        self::assertResponseIsSuccessful();
+        $row = $crawler->filter('[data-test-cart-item-product-row="' . $product->getName() . '"]');
+        self::assertStringContainsString('7.00', $row->filter('[data-test-cart-item-unit-price]')->text());
+    }
 }

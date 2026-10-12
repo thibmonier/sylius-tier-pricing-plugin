@@ -94,10 +94,13 @@ tmonier_sylius_tier_pricing:
     cache_ttl: 3600         # cached rules per product (0 = no cache); saving a rule invalidates them
 ```
 
-**Customer group rules** apply to orders of a signed-in customer only. At a guest checkout,
-Sylius attaches an existing customer (without shop account, common for B2B customers created
-in the admin) to the order from the e-mail typed by the visitor: anyone knowing that e-mail
-would get the group prices. Set `group_prices_for_guests: true` to apply them anyway.
+**Customer group rules.** In shop requests (shop pages and shop API), group rules apply only
+when the order's customer is the signed-in customer. At a guest checkout, Sylius attaches an
+existing customer (without shop account, common for B2B customers created in the admin) to the
+order from the e-mail typed by the visitor: anyone knowing that e-mail would get the group
+prices. Everywhere else (admin, admin API, console, message consumers: orders created on behalf
+of a customer, quote conversions, imports) the group of the order's customer applies. Set
+`group_prices_for_guests: true` to apply group rules in shop requests too.
 
 **Taxes.** Sylius has no "prices with / without taxes" setting per channel: a channel price
 includes the tax or not depending on the tax rate (`includedInPrice`) of the variant. Tier
@@ -190,7 +193,7 @@ given quantities.
   [tmonier/sylius-quote-request-plugin](https://github.com/thibmonier/sylius-quote-request-plugin)
   runs at 45; the tier processor at **44**; then shipping (40, 30), promotions (20), taxes (10).
 - For each mutable, non-exempt line: rules of the product for the channel and the customer
-  group of the order (signed-in customers only by default), applicable for the line quantity
+  group of the order (in shop requests, only for the signed-in customer by default), applicable for the line quantity
   and the product quantity (mutable, non-exempt lines only). Each rule gives a price: fixed
   price, or regular price minus the percentage, rounded half up, at least the channel pricing
   minimum price, at most the current price. The **lowest** price wins; ties go to the most
@@ -221,7 +224,9 @@ the EU.*
 - Reductions the plugin does not create keep the **core Sylius display**, which is not
   changed by this plugin: during a catalog promotion (or with a manual "compare at" price), the
   product page and the cart strike `ChannelPricing.originalPrice` through, and the product page
-  shows the lowest price of the last 30 days on a separate line. For B2C compliance, keep
+  shows the lowest price of the last 30 days on a separate line. The **product cards** (product
+  lists, taxon pages, homepage, associated / related products) strike `originalPrice` through
+  **without** the lowest price line. For B2C compliance, keep
   `originalPrice` equal to the lowest price of the last 30 days, or override those core
   templates. When a tier price wins over a catalog promotion, no struck-through price is shown.
 - Consumer prices must include taxes: store consumer channel prices with taxes (tax rates

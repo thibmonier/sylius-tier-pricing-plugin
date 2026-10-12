@@ -71,7 +71,11 @@ return static function (ContainerConfigurator $container): void {
 
     $services
         ->set('tmonier_tier_pricing.order_customer_group_resolver', OrderCustomerGroupResolver::class)
-        ->args([param('tmonier_tier_pricing.group_prices_for_guests')])
+        ->args([
+            service('sylius.section_resolver.uri_based'),
+            service('sylius.context.customer'),
+            param('tmonier_tier_pricing.group_prices_for_guests'),
+        ])
     ;
     $services->alias(PriceDisplayResolverInterface::class, 'tmonier_tier_pricing.price_display_resolver');
 

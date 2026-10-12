@@ -41,22 +41,28 @@ final class AdminTierPriceRuleTest extends WebTestCase
         self::assertStringContainsString('-7.5 %', $crawler->filter('[data-test-tmonier-tier-rule-value]')->text());
     }
 
-    public function testTheGridDoesNotRunAQueryPerRule(): void
+    public function testTheGridDoesNotRunAQueryPerRuleNorPerProduct(): void
     {
         $channel = $this->catalog()->channel();
+        $prefix = 'grid_' . bin2hex(random_bytes(3));
         $single = $this->catalog()->product($channel, [1000]);
-        $many = $this->catalog()->product($channel, [1000, 1000, 1000, 1000, 1000, 1000]);
+        $single->setCode($prefix . '_single');
         $this->catalog()->rule($channel, $this->catalog()->variant($single), 10, TierPriceRuleInterface::TYPE_FIXED_UNIT_PRICE, 900);
         for ($index = 0; $index < 6; ++$index) {
-            $this->catalog()->rule($channel, $this->catalog()->variant($many, $index), 10, TierPriceRuleInterface::TYPE_FIXED_UNIT_PRICE, 900);
+            $product = $this->catalog()->product($channel, [1000]);
+            $product->setCode(sprintf('%s_many_%d', $prefix, $index));
+            // Product-wide and variant rules: both product joins are used.
+            $target = 0 === $index % 2 ? $product : $this->catalog()->variant($product);
+            $this->catalog()->rule($channel, $target, 10, TierPriceRuleInterface::TYPE_FIXED_UNIT_PRICE, 900);
         }
+        $this->entityManager()->flush();
         // Nothing in the identity map: every lazy association would be a query.
         $this->entityManager()->clear();
         $this->loginAdmin();
 
-        $this->queryCount((string) $single->getCode(), 1); // warm-up: user, channels, locales
-        $one = $this->queryCount((string) $single->getCode(), 1);
-        $six = $this->queryCount((string) $many->getCode(), 6);
+        $this->queryCount($prefix . '_single', 1); // warm-up: user, channels, locales
+        $one = $this->queryCount($prefix . '_single', 1);
+        $six = $this->queryCount($prefix . '_many', 6);
 
         self::assertSame($one, $six);
     }
@@ -132,6 +138,43 @@ final class AdminTierPriceRuleTest extends WebTestCase
         self::assertInstanceOf(TierPriceRuleInterface::class, $updated);
         self::assertSame(TierPriceRuleInterface::TYPE_FIXED_UNIT_PRICE, $updated->getType());
         self::assertSame(799, $updated->getValue());
+    }
+
+    public function testAFixedPriceAbove100000IsAccepted(): void
+    {
+        $channel = $this->catalog()->channel();
+        $product = $this->catalog()->product($channel, [20000000]);
+        $this->loginAdmin();
+
+        $this->client->request('POST', '/admin/tier-price-rules/new', ['tmonier_tier_pricing_tier_price_rule' => [
+            'channel' => (string) $channel->getCode(),
+            'scope' => 'product',
+            'product' => (string) $this->idOf($product),
+            'quantityBasis' => 'line',
+            'minQuantity' => '2',
+            'type' => 'fixed_unit_price',
+            'amount' => '150000.00',
+            'enabled' => '1',
+            '_token' => $this->csrfToken(),
+        ]]);
+
+        self::assertResponseRedirects();
+        $rules = $this->repository()->findByProduct($product);
+        self::assertCount(1, $rules);
+        self::assertSame(15000000, $rules[0]->getValue());
+
+        // Above the maximum (10,000,000.00): a form error, not a database error.
+        $this->client->request('POST', '/admin/tier-price-rules/new', ['tmonier_tier_pricing_tier_price_rule' => [
+            'channel' => (string) $channel->getCode(),
+            'scope' => 'product',
+            'product' => (string) $this->idOf($product),
+            'quantityBasis' => 'line',
+            'minQuantity' => '3',
+            'type' => 'fixed_unit_price',
+            'amount' => '10000000.01',
+            '_token' => $this->csrfToken(),
+        ]]);
+        self::assertResponseStatusCodeSame(422);
     }
 
     public function testAVariantRuleNeedsAVariant(): void

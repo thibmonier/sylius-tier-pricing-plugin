@@ -93,7 +93,8 @@ final class TierPriceRuleType extends AbstractResourceType
                 'required' => false,
                 'currency' => false,
                 'divisor' => 100,
-                'constraints' => [new Range(min: 0, max: TierPriceRuleInterface::MAX_AMOUNT / 100, groups: ['sylius'])],
+                // The model data of the money field is already in minor units (divisor 100).
+                'constraints' => [new Range(min: 0, max: TierPriceRuleInterface::MAX_AMOUNT, groups: ['sylius'])],
             ])
             ->add('enabled', CheckboxType::class, [
                 'label' => 'sylius.ui.enabled',

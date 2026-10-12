@@ -46,7 +46,7 @@ final class Configuration implements ConfigurationInterface
                     ->defaultTrue()
                 ->end()
                 ->booleanNode('group_prices_for_guests')
-                    ->info('Apply customer group rules to guest checkouts too. Off by default: Sylius attaches an existing customer to a guest order from the e-mail typed at checkout, so anyone knowing the e-mail of a B2B customer would get its prices.')
+                    ->info('Apply customer group rules in shop requests even when the order customer is not the signed-in customer. Off by default: Sylius attaches an existing customer to a guest order from the e-mail typed at checkout, so anyone knowing the e-mail of a B2B customer would get its prices. Admin, admin API and console always apply the group.')
                     ->defaultFalse()
                 ->end()
                 ->integerNode('cache_ttl')

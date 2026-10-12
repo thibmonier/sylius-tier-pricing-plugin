@@ -36,5 +36,6 @@ interface TierPriceRuleRepositoryInterface extends RepositoryInterface
     /** @return list<TierPriceRuleInterface> rules of the product and of its variants */
     public function findByProduct(ProductInterface $product): array;
 
-    public function createListQueryBuilder(): QueryBuilder;
+    /** Grid query; with the admin locale, product names are fetched in the same query. */
+    public function createListQueryBuilder(?string $localeCode = null): QueryBuilder;
 }

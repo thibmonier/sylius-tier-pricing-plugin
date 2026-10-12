@@ -104,11 +104,12 @@ class TierPriceRuleRepository extends EntityRepository implements TierPriceRuleR
         return $result;
     }
 
-    public function createListQueryBuilder(): QueryBuilder
+    public function createListQueryBuilder(?string $localeCode = null): QueryBuilder
     {
-        // Every to-one association the grid row shows is in the list query. Translations are
-        // to-many (they would break the pagination): one query per distinct product name.
-        return $this->createQueryBuilder('o')
+        // Every association the grid row shows is in the list query (no query per row or per
+        // product): to-one associations, and the product translations of the admin locale only
+        // (one row per rule, so the pagination is not affected).
+        $queryBuilder = $this->createQueryBuilder('o')
             ->addSelect('channel', 'baseCurrency', 'customerGroup', 'product', 'variant', 'variantProduct')
             ->innerJoin('o.channel', 'channel')
             ->leftJoin('channel.baseCurrency', 'baseCurrency')
@@ -117,5 +118,15 @@ class TierPriceRuleRepository extends EntityRepository implements TierPriceRuleR
             ->leftJoin('o.variant', 'variant')
             ->leftJoin('variant.product', 'variantProduct')
         ;
+        if (null !== $localeCode) {
+            $queryBuilder
+                ->addSelect('productTranslation', 'variantProductTranslation')
+                ->leftJoin('product.translations', 'productTranslation', 'WITH', 'productTranslation.locale = :localeCode')
+                ->leftJoin('variantProduct.translations', 'variantProductTranslation', 'WITH', 'variantProductTranslation.locale = :localeCode')
+                ->setParameter('localeCode', $localeCode)
+            ;
+        }
+
+        return $queryBuilder;
     }
 }

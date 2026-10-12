@@ -7,6 +7,8 @@ sylius_grid:
                     class: "%tmonier_tier_pricing.model.tier_price_rule.class%"
                     repository:
                         method: createListQueryBuilder
+                        arguments:
+                            localeCode: "expr:service('sylius.context.locale').getLocaleCode()"
             sorting:
                 minQuantity: asc
             fields:
@@ -63,7 +65,7 @@ sylius_grid:
                     type: string
                     label: sylius.ui.search
                     options:
-                        fields: [product.code, variant.code]
+                        fields: [product.code, variant.code, variant.product.code]
                 channel:
                     type: entity
                     label: sylius.ui.channel
