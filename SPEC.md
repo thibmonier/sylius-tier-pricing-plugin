@@ -107,8 +107,9 @@ for each threshold: what is shown is what is charged (`OrderProcessingTest`, res
   (receives `form`; re-rendered by `AddToCartFormComponent` on variant change, nothing emitted
   on quantity change, so it is not a standalone live component). Table rows: price of 1 piece
   then each threshold whose price is lower than the previous row. Nudge from the cart content.
-- Cart: the `unit_price` child of `sylius_shop.cart.index.content.form.sections.general.items.body`
-  is replaced by the same cell plus "volume price from N pieces" and the nudge.
+- Cart: the `item` child of `sylius_shop.cart.index.content.form.sections.general.items.body`
+  is replaced by the same cell plus, under the product, "volume price from N pieces" and the
+  nudge (the unit price column is too narrow for them; the core unit price cell is kept).
 - `sylius_shop.twig.extension.order_item_original_price_to_display` is decorated: no
   struck-through price for a line with a tier price; only a cart promotion on top is shown,
   from the tier price

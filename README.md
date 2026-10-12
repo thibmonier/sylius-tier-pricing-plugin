@@ -176,7 +176,7 @@ count in the quantity of their product).
 | Hook | Content |
 |---|---|
 | `sylius_shop.product.show.content.info.summary.add_to_cart` → `tmonier_tier_pricing` | Tier table and nudge (between quantity and button) |
-| `sylius_shop.cart.index.content.form.sections.general.items.body` → `unit_price` | Core unit price cell + tier applied + nudge (replaces the core template) |
+| `sylius_shop.cart.index.content.form.sections.general.items.body` → `item` | Core product cell + tier applied + nudge under the product (replaces the core template) |
 | `sylius_admin.product.update.content.form.side_navigation` / `.sections` → `tmonier_tier_pricing` | Volume pricing tab of the product form |
 | `tmonier_tier_pricing_admin.tier_price_rule.create\|update.content.form.sections.general` → `fields` | Rule form layout |
 

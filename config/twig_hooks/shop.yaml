@@ -7,9 +7,10 @@ sylius_twig_hooks:
                 template: '@TmonierSyliusTierPricingPlugin/shop/product/tier_prices.html.twig'
                 priority: 50
 
-        # Cart: the unit price cell shows the tier applied and the next one; the regular price is
-        # not struck through for a tier price (see OrderItemOriginalPriceToDisplayExtension).
+        # Cart: the tier applied and the next one under the product of the line (the core unit price
+        # cell is kept; the regular price is not struck through for a tier price, see
+        # OrderItemOriginalPriceToDisplayExtension).
         'sylius_shop.cart.index.content.form.sections.general.items.body':
-            unit_price:
-                template: '@TmonierSyliusTierPricingPlugin/shop/cart/unit_price.html.twig'
-                priority: 200
+            item:
+                template: '@TmonierSyliusTierPricingPlugin/shop/cart/item.html.twig'
+                priority: 300

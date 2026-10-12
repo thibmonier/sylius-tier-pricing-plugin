@@ -1,0 +1,34 @@
+{#
+    Same cell as @SyliusShop/cart/index/content/form/sections/general/items/body/item.html.twig, plus,
+    under the product, the tier applied and the next one (the unit price cell stays the core one).
+#}
+{% import '@SyliusShop/shared/macro/money.html.twig' as money %}
+
+{% set item = hookable_metadata.context.item %}
+{% set tier = tmonier_tier_pricing_item_tier(item) %}
+{% set table = tmonier_tier_pricing_cart_table(item) %}
+
+<td {{ sylius_test_html_attribute('cart-item-product') }}>
+    {{ component('sylius_shop:order_item:product_info', { item: item }) }}
+    {% if tier is not null or (table is not null and table.nudge is not null) %}
+        <div class="small mt-2" {{ sylius_test_html_attribute('tmonier-tier-cart-info') }}>
+            {% if tier is not null %}
+                <div class="text-success fw-semibold" {{ sylius_test_html_attribute('tmonier-tier-applied') }}>
+                    {{ 'tmonier_tier_pricing.ui.tier_applied'|trans({'%quantity%': tier.minQuantity|default('')}) }}
+                    {%- if tier.mixAndMatch|default(false) %} <span class="fw-normal text-body-secondary">({{ 'tmonier_tier_pricing.ui.mix_and_match'|trans|trim('.') }})</span>{% endif %}
+                </div>
+            {% endif %}
+            {% if table is not null and table.nudge is not null %}
+                {# Same tax convention as the unit price of the line (as stored), labelled when known. #}
+                {% set tax_convention = tmonier_tier_pricing_tax_convention(item.variant) %}
+                {% set tax_suffix = tax_convention is null ? '' : ' ' ~ ((tax_convention == 'included' ? 'tmonier_tier_pricing.ui.incl_tax' : 'tmonier_tier_pricing.ui.excl_tax')|trans) %}
+                <div class="text-body-secondary" {{ sylius_test_html_attribute('tmonier-tier-nudge') }}>
+                    {{ 'tmonier_tier_pricing.ui.nudge'|trans({
+                        '%quantity%': table.nudge.quantityToAdd,
+                        '%price%': money.convertAndFormat(table.nudge.unitPrice) ~ tax_suffix,
+                    }) }}
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+</td>

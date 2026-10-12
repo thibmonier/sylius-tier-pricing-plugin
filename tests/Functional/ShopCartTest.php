@@ -42,6 +42,9 @@ final class ShopCartTest extends WebTestCase
         self::assertStringContainsString('Volume price from 10 pieces', $row->filter('[data-test-tmonier-tier-applied]')->text());
         self::assertStringContainsString('Add 8 more to pay', $row->filter('[data-test-tmonier-tier-nudge]')->text());
         self::assertStringContainsString('8.00', $row->filter('[data-test-tmonier-tier-nudge]')->text());
+        $productCell = $row->filter('[data-test-cart-item-product]');
+        self::assertCount(1, $productCell->filter('[data-test-tmonier-tier-applied]'), 'tier shown under the product, not in the narrow unit price column');
+        self::assertCount(1, $productCell->filter('[data-test-tmonier-tier-nudge]'));
     }
 
     public function testACartLineWithoutTierKeepsTheCoreDisplay(): void
