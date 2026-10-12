@@ -1,6 +1,7 @@
 imports:
     - { resource: "@TmonierSyliusTierPricingPlugin/config/config.yaml" }
     - { resource: "exemption.php" }
+    - { resource: "dbal_savepoints.php" }
 
 tmonier_sylius_tier_pricing:
     # TestCatalog::businessChannel() creates it in the test transaction.
