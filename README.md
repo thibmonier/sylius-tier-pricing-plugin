@@ -18,10 +18,11 @@ and open source.
 | Need | What the plugin does |
 |---|---|
 | Lower the unit price from a quantity | **Rules**: from `N` pieces (N >= 2), a **fixed unit price** or a **percentage off** the regular price, per channel, optionally for one **customer group**, with optional start and end dates. |
-| Target what you sell | A rule applies to **one variant** or to **every variant of a product**. The threshold counts the cart line, or **every variant of the product** (mix and match: 6 red + 4 blue = 10). |
+| Target what you sell | A rule applies to **one variant**, to **every variant of a product** or *(1.1)* to **every product of a taxon** and of its children (through any of the product's taxons, not only the main one). The threshold counts the cart line, **every variant of the product** (mix and match: 6 red + 4 blue = 10) or *(1.1)* **every product of the taxon** (4 drills + 6 saws = 10 tools). |
+| Clear precedence *(1.1)* | Variant and product rules first, else the rules of the **deepest taxon** of the product, else the regular price. |
 | Predictable results | Among the rules that apply to the customer and the quantities, the **lowest unit price wins** (specificity only breaks ties): the price never goes up with the quantity, and the table shows exactly what the cart charges. |
 | Correct carts | An order processor (priority 44) changes the unit price of the cart line; cart promotions, shipping and taxes are computed on it. Locked (immutable) lines, e.g. negotiated quote lines, are left untouched. |
-| No double discount | With a catalog promotion, the customer gets the **best of** the tier price and the promotion price (a percentage is computed on the regular price). The channel pricing minimum price is a floor. |
+| No double discount, or a chosen one | Per rule *(1.1)*: **best of** the tier price and the catalog promotion price (default, 1.0 behaviour; a percentage is computed on the regular price), **on top** (the percentage is taken off the promotion price) or **skip if promoted** (no tier price for a variant with a catalog promotion). The channel pricing minimum price is a floor; cart promotions always apply on top of the tier price. |
 | Show the prices | **Tier table** on the product page (re-rendered when the variant changes), **"add 3 more to pay 8.00 € per piece"** nudges on the product page and in the cart, "volume price from 10 pieces" on cart lines. |
 | Stay on the right side of price rules | Tiers are shown as conditional prices: no struck-through price (also in the shop API: `originalUnitPrice` of a tier line is the tier price in consumer channels), no "-x %" in consumer channels by default, amounts in the tax convention of the Sylius prices next to them, labelled (see [Legal notes](#legal-notes)). |
 | Manage the rules | Admin grid (*Catalog > Volume pricing*), rule form, **Volume pricing tab** on the product page. |
@@ -131,8 +132,9 @@ framework:
 |---|---|
 | Channel | required; amounts are in its base currency |
 | Customer group | empty = everybody |
-| Applies to | `product` (every variant) or `variant` |
-| Quantity counted | `line` (the variant) or `product` (every variant of the product, mix and match) |
+| Applies to | `product` (every variant), `variant` or `taxon` (every product of the taxon and of its children, 1.1) |
+| Quantity counted | `line` (the variant), `product` (every variant of the product, mix and match) or `taxon` (every product of the taxon of the rule, taxon rules only, 1.1) |
+| With catalog promotions (1.1) | `best_of` (default), `on_top` or `skip_if_promoted` |
 | From quantity | 2 to 1,000,000 |
 | Price | `percentage_off` (of the regular price, before catalog promotions) or `fixed_unit_price` (same tax convention as the channel prices, at most 10,000,000.00) |
 | Enabled, starts at, ends at | the end is excluded; dates are stored in the PHP default timezone (UTC recommended, as for Sylius), a date given with another offset keeps its instant |
@@ -150,10 +152,14 @@ bin/console tmonier:tier-pricing:import rules.csv [--mode=upsert|replace] [--cha
 ```
 
 ```csv
-channel,customer_group,scope,product,variant,quantity_basis,min_quantity,type,value,enabled,starts_at,ends_at
-FASHION_WEB,,product,Everyday_white_basic_T_Shirt,,line,10,percentage_off,7.5,1,,
-FASHION_WEB,wholesale,variant,,Everyday_white_basic_T_Shirt-variant-0,line,50,fixed_unit_price,6.40,1,2027-01-01T00:00:00+00:00,
+channel,customer_group,scope,product,variant,quantity_basis,min_quantity,type,value,enabled,starts_at,ends_at,taxon,cumulation
+FASHION_WEB,,product,Everyday_white_basic_T_Shirt,,line,10,percentage_off,7.5,1,,,,best_of
+FASHION_WEB,wholesale,variant,,Everyday_white_basic_T_Shirt-variant-0,line,50,fixed_unit_price,6.40,1,2027-01-01T00:00:00+00:00,,,
+FASHION_WEB,,taxon,,,taxon,20,percentage_off,5,1,,,t_shirts,on_top
 ```
+
+The last two columns are new in 1.1 (`taxon`: code of the taxon of a taxon rule; `cumulation`:
+empty = `best_of`); files with the 12 columns of 1.0 are still imported.
 
 `value` is an amount (`6.40`) for a fixed price and a percentage (`7.5`) for a percentage off.
 `enabled` is `1`, `true`, `yes`, `0`, `false`, `no` or empty (enabled); anything else is an
@@ -192,12 +198,20 @@ given quantities.
   catalog price; the quote price lock of
   [tmonier/sylius-quote-request-plugin](https://github.com/thibmonier/sylius-quote-request-plugin)
   runs at 45; the tier processor at **44**; then shipping (40, 30), promotions (20), taxes (10).
-- For each mutable, non-exempt line: rules of the product for the channel and the customer
-  group of the order (in shop requests, only for the signed-in customer by default), applicable for the line quantity
-  and the product quantity (mutable, non-exempt lines only). Each rule gives a price: fixed
-  price, or regular price minus the percentage, rounded half up, at least the channel pricing
-  minimum price, at most the current price. The **lowest** price wins; ties go to the most
-  specific rule (variant, then customer group, then highest threshold), then to the oldest.
+- For each mutable, non-exempt line: rules of the product (and, 1.1, of the taxons of the
+  product and their ancestors) for the channel and the customer group of the order (in shop
+  requests, only for the signed-in customer by default).
+- **Precedence (1.1)**: the variant and product rules; if none targets the variant, the
+  customer and today, the rules of the deepest taxon that has such rules (several taxons at that
+  depth compete); else none. A level is chosen whatever the quantity, so a product rule from 20
+  pieces hides a taxon rule from 5 pieces: below 20 pieces there is no tier price (the price
+  never goes up with the quantity).
+- Within that level, the rules applicable for the line quantity, the product quantity or the
+  taxon quantity (mutable, non-exempt lines only; `skip_if_promoted` rules are left out for a
+  variant with a catalog promotion) each give a price: fixed price, or regular price (`on_top`:
+  current price) minus the percentage, rounded half up, at least the channel pricing minimum
+  price, at most the current price. The **lowest** price wins; ties go to the most specific rule
+  (variant, then customer group, then highest threshold), then to the oldest.
   The product table is computed with the same function for each threshold.
 - In consumer channels the original unit price of a tier line is set to the tier price, so that
   neither the cart nor a headless front using the shop API (`originalUnitPrice > unitPrice`)
@@ -235,9 +249,13 @@ the EU.*
 
 ## Limitations
 
-- No taxon (category) scope or quantity basis yet; no `on_top` or `skip_if_promoted`
-  stacking modes (best of only); no admin CSV upload form; no badge or "from X" on product
-  lists (planned for 1.1).
+- No admin CSV upload form; no badge or "from X" on product lists (planned for 1.2).
+- `skip_if_promoted` only looks at catalog promotions: cart promotions are computed after the
+  tier price (priority 20 < 44) and always apply on top of it.
+- `on_top` with a fixed unit price behaves as `best_of` (the best of the fixed price and the
+  promotion price).
+- On the product page, a taxon-basis threshold counts the taxon lines already in the cart; the
+  nudge does not know which other products the customer will add.
 - The product page nudge is computed from the cart content, not from the quantity typed in
   the add to cart form (the Sylius component does not re-render on quantity changes).
 - A percentage applies to `originalPrice` when a catalog promotion is applied; if the merchant

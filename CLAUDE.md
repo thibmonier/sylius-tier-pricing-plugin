@@ -32,7 +32,7 @@ server: `symfony server:start -d --port=8092 --no-tls` (admin `sylius` / `sylius
 
 - `src/Entity/TierPriceRule` (Sylius resource, XML mapped superclass in `config/doctrine`,
   migrations in `src/Migrations`: Schema API table + plain SQL CHECK on scope/target).
-- `Pricing/TierPriceResolver`: pure (no DB, no clock), lowest price wins among applicable rules (specificity breaks ties); `TierPriceRuleData` / `TierPriceContext`
+- `Pricing/TierPriceResolver`: pure (no DB, no clock); 1.1 precedence by level (variant/product, then deepest taxon), lowest price wins among the applicable rules of that level (specificity breaks ties), cumulation `best_of` / `on_top` / `skip_if_promoted`; `Pricing/TaxonQuantityCounter` (taxon basis); `TierPriceRuleData` / `TierPriceContext`
   value objects. `Pricing/CachedTierPriceRuleProvider`: rules per channel/product/group from
   `Repository/TierPriceRuleRepository::findCandidateData()`, tag-aware pool
   `cache.tmonier_tier_pricing` + memo (kernel.reset). `EventListener/TierPriceCacheInvalidator`

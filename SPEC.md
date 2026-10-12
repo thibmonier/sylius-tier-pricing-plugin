@@ -82,6 +82,46 @@ price the cart did not charge. With best price wins, the set of applicable rules
 with the quantity, so the price never goes up, and the table is computed with the same function
 for each threshold: what is shown is what is charged (`OrderProcessingTest`, resolver tests).
 
+#### 3.2.1 Version 1.1: taxon rules, precedence, cumulation
+
+- **Taxon rules** (`scope = taxon`, `taxon_id`): a product matches through **any** of its
+  `productTaxons` (not only the main taxon), in the taxon of the rule or one of its children
+  (nested set: same root, `left`/`right` inside). Decision of the brief: main taxon only would
+  miss products classified in several categories, the usual case in B2B catalogs.
+- **Precedence** (brief: variant/product > taxon (deepest first) > channel default): the
+  resolver groups the rules targeting the variant, the customer group and the date into levels
+  (product level for variant and product rules, then one level per taxon depth) and keeps the
+  most specific level only; best price wins inside it (1.0 rule). The level is chosen
+  **regardless of the quantity**: choosing the most specific *applicable* rule would let a
+  taxon rule at 5+ (-30 %) be replaced by a product rule at 20+ (-5 %), so 20 pieces would
+  cost more than 19. Overriding by level keeps the price monotonic within the chosen level.
+  "Channel default" = the channel price (no rule). Rules of the same depth (product in two
+  sibling taxons) compete on price.
+- **Taxon basis** (`quantity_basis = taxon`, taxon rules only, validated): the quantity of
+  every mutable, non-exempt line whose product is in the taxon of the rule or its children
+  (`TaxonQuantityCounter`, through any taxon, one count per line and taxon).
+- **Cumulation** per rule (`cumulation`): `best_of` (1.0 behaviour, default for existing rules
+  and 1.0 API / CSV clients), `on_top` (percentage taken off the current price, i.e. after the
+  catalog promotion; a fixed price stays the best of both), `skip_if_promoted` (not applied
+  when the channel pricing of the variant has applied catalog promotions; the level is still
+  chosen, so a skipped product rule does not hand over to a taxon rule — the merchant asked for
+  no tier on promoted products). Cart promotions run after the tier price (20 < 44) and always
+  stack: `skip_if_promoted` cannot look at them without a circular dependency (their
+  eligibility depends on totals that depend on the tier price). Omnibus unchanged: the core
+  struck price remains `originalPrice` / the lowest price before the discount, the tier line is
+  never shown struck through.
+- **Cache**: a taxon rule change, a change of the taxon tree (parent, left, right, root) or a
+  deleted taxon invalidates every cached rule; adding or removing a taxon of a product
+  invalidates that product.
+- Admin form: `taxon` autocomplete, `cumulation` radio (empty = `best_of`); grid shows the
+  taxon target and a non-default cumulation; admin API exposes `taxon` (IRI) and `cumulation`;
+  shop API tiers get `taxonBasis`; CSV has two more columns (`taxon`, `cumulation`, 1.0 files
+  still accepted).
+- Migrations: `Version20261013100000` (columns `taxon_id` + FK + indexes, `cumulation` NOT NULL
+  DEFAULT 'best_of': existing rows keep the 1.0 behaviour), `Version20261013100001` (CHECK
+  recreated with the taxon target; 1.0 rows satisfy it), `Version20261013100002` (PostgreSQL
+  only: sequence-based ids, as for trade-credit 1.1).
+
 ### 3.3 Order processing (`TierPriceOrderProcessor`, priority 44)
 
 - Runs after `OrderPricesRecalculator` (50) and the quote price lock of
@@ -149,7 +189,9 @@ for each threshold: what is shown is what is charged (`OrderProcessingTest`, res
 | Neutral adjustment as marker (proposal of the memo to validate) | Validated: neutral item adjustments do not change totals (tested), persist with the order and keep a record. Removed and recreated by the processor itself. |
 | Percentage rounding | Half up on cents (unit price), before multiplying by the quantity. |
 | Group targeting vs RFQ group discounts | Kept separate (memo §3). |
-| Catalog promotion stacking | Best of only (v1). |
+| Catalog promotion stacking | Per rule (1.1): best of (default), on top, skip if promoted (catalog promotions only, §3.2.1). |
+| Taxon matching (1.1) | Any productTaxon, children included; precedence product > deepest taxon > none, chosen whatever the quantity (§3.2.1). |
+| "From X" on product lists | Not in 1.1 (v1.2). |
 | Taxes in display | As stored + label from the channel default tax zone (documented limitation). |
 | Core display of catalog promotions | Unchanged: Sylius strikes `originalPrice` through on the product page and cart (lowest price line on the product page only) and on product cards (lists, homepage, related products, without the lowest price line); merchants keep it equal to the 30-day lowest price or override the templates (README, Legal notes). |
 | Multi-node cache | Pool on `cache.app`: must be shared (Redis) with several nodes, or `cache_ttl: 0` (README). |
