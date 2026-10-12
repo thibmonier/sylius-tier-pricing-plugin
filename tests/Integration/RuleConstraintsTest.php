@@ -88,6 +88,7 @@ final class RuleConstraintsTest extends KernelTestCase
 
         $this->expectException(DbalException::class);
         $this->connection()->insert('tmonier_tier_price_rule', [
+            'id' => $this->freeId(),
             'channel_id' => $channel->getId(),
             'product_id' => $product->getId(),
             'scope' => 'variant',
@@ -131,6 +132,7 @@ final class RuleConstraintsTest extends KernelTestCase
         $tools = $this->catalog()->taxon();
         $product = $this->catalog()->product($channel);
         $row = [
+            'id' => $this->freeId(),
             'channel_id' => $channel->getId(),
             'taxon_id' => $tools->getId(),
             'scope' => 'taxon',
@@ -145,6 +147,14 @@ final class RuleConstraintsTest extends KernelTestCase
         self::assertSame('best_of', $this->connection()->fetchOne('SELECT cumulation FROM tmonier_tier_price_rule WHERE taxon_id = ?', [$tools->getId()]), 'column default');
 
         $this->expectException(DbalException::class);
-        $this->connection()->insert('tmonier_tier_price_rule', ['product_id' => $product->getId(), 'min_quantity' => 20] + $row);
+        $this->connection()->insert('tmonier_tier_price_rule', ['id' => $this->freeId(), 'product_id' => $product->getId(), 'min_quantity' => 20] + $row);
+    }
+
+    /** Ids come from a sequence on PostgreSQL (no column default): raw inserts give one. */
+    private function freeId(): int
+    {
+        $max = $this->connection()->fetchOne('SELECT MAX(id) FROM tmonier_tier_price_rule');
+
+        return (is_numeric($max) ? (int) $max : 0) + 1000;
     }
 }
