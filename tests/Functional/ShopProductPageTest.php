@@ -127,4 +127,21 @@ final class ShopProductPageTest extends WebTestCase
         self::assertStringContainsString('9.00', $nudge->text());
         self::assertStringContainsString('All variants of the product count towards the quantity.', $crawler->filter('[data-test-tmonier-tier-prices]')->text());
     }
+
+    public function testATaxonRuleIsShownOnTheProductPageWithItsBasis(): void
+    {
+        $channel = $this->catalog()->channel();
+        $tools = $this->catalog()->taxon();
+        $drills = $this->catalog()->taxon($tools);
+        $product = $this->catalog()->product($channel, [1000]);
+        $this->catalog()->classify($product, false, $drills);
+        $this->catalog()->rule($channel, $tools, 10, TierPriceRuleInterface::TYPE_PERCENTAGE_OFF, 1000, basis: TierPriceRuleInterface::BASIS_TAXON);
+
+        $crawler = $this->client->request('GET', $this->shopUrl('/products/' . $product->getSlug()));
+
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('9.00', $crawler->filter('[data-test-tmonier-tier-row="10"]')->text());
+        self::assertStringContainsString('**', $crawler->filter('[data-test-tmonier-tier-row="10"]')->text());
+        self::assertStringContainsString('All products of the category count towards the quantity.', $crawler->filter('[data-test-tmonier-tier-taxon-basis]')->text());
+    }
 }

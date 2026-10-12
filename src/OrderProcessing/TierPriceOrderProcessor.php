@@ -14,6 +14,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 use Tmonier\SyliusTierPricingPlugin\Entity\TierPriceRuleInterface;
 use Tmonier\SyliusTierPricingPlugin\Pricing\OrderCustomerGroupResolver;
 use Tmonier\SyliusTierPricingPlugin\Pricing\PriceDisplayResolverInterface;
+use Tmonier\SyliusTierPricingPlugin\Pricing\TaxonQuantityCounter;
 use Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceCalculatorInterface;
 
 /**
@@ -39,6 +40,7 @@ final class TierPriceOrderProcessor implements OrderProcessorInterface
         private readonly TranslatorInterface $translator,
         private readonly OrderCustomerGroupResolver $customerGroupResolver = new OrderCustomerGroupResolver(),
         private readonly ?PriceDisplayResolverInterface $displayResolver = null,
+        private readonly TaxonQuantityCounter $taxonQuantityCounter = new TaxonQuantityCounter(),
     ) {
     }
 
@@ -72,6 +74,8 @@ final class TierPriceOrderProcessor implements OrderProcessorInterface
             $productQuantities[$productId] = ($productQuantities[$productId] ?? 0) + $item->getQuantity();
         }
 
+        // Taxon rules counting the taxon: every eligible line of the taxon and of its children.
+        $taxonQuantities = $this->taxonQuantityCounter->count($items);
         $customerGroup = $this->customerGroupResolver->resolve($order);
         // Consumer channels: the regular price is not exposed as the original price of a tier
         // line (the shop API and headless fronts strike originalUnitPrice > unitPrice through).
@@ -83,7 +87,7 @@ final class TierPriceOrderProcessor implements OrderProcessorInterface
                 continue;
             }
             $currentPrice = $item->getUnitPrice();
-            $quote = $this->calculator->quote($variant, $channel, $customerGroup, $item->getQuantity(), $productQuantities[$productId] ?? 0, $currentPrice);
+            $quote = $this->calculator->quote($variant, $channel, $customerGroup, $item->getQuantity(), $productQuantities[$productId] ?? 0, $currentPrice, $taxonQuantities);
             if (null === $quote || !$quote->isCheaper()) {
                 continue;
             }
@@ -105,6 +109,9 @@ final class TierPriceOrderProcessor implements OrderProcessorInterface
                     'value' => $quote->rule->value,
                     'priceWithoutTier' => $currentPrice,
                     'mixAndMatch' => TierPriceRuleInterface::BASIS_PRODUCT === $quote->rule->quantityBasis,
+                    'taxonBasis' => TierPriceRuleInterface::BASIS_TAXON === $quote->rule->quantityBasis,
+                    'taxonId' => $quote->rule->taxonId,
+                    'cumulation' => $quote->rule->cumulation,
                 ],
             ));
         }

@@ -25,6 +25,7 @@ tmonier_tier_pricing:
         nudge: 'Voeg er nog %quantity% toe en betaal %price% per stuk.'
         tier_applied: 'Staffelprijs vanaf %quantity% stuks'
         adjustment_label: 'Staffelprijs vanaf %quantity% stuks'
+        taxon_basis: 'Alle producten van de categorie tellen mee voor het aantal.'
     form:
         all_customers: 'Alle klanten'
         scope: 'Geldt voor'
@@ -37,12 +38,21 @@ tmonier_tier_pricing:
         amount: 'Stukprijs'
         amount_help: 'In de basisvaluta van het kanaal, btw zoals in de kanaalprijzen.'
         legal_help: 'In consumentenkanalen worden staffels getoond als voorwaardelijke prijzen ("vanaf 10 stuks"), nooit als korting op de normale prijs. Dit is geen juridisch advies.'
+        taxon_help: 'Voor een regel op alle producten van een taxon en zijn subcategorieën (hoofdtaxon of niet).'
+        cumulation: 'Met catalogusacties'
+        cumulation_help: 'Winkelwagenacties gelden altijd bovenop de staffelprijs.'
     scope:
         product: 'Alle varianten van een product'
         variant: 'Eén variant'
+        taxon: 'Alle producten van een taxon'
     basis:
         line: 'Per variant'
         product: 'Alle varianten van het product (mix & match)'
+        taxon: 'Alle producten van de taxon (combineerbaar)'
     type:
         percentage_off: 'Percentage van de normale prijs'
         fixed_unit_price: 'Vaste stukprijs'
+    cumulation:
+        best_of: 'De beste van staffelprijs en actieprijs'
+        on_top: 'Percentage bovenop de actieprijs'
+        skip_if_promoted: 'Geen staffelprijs voor producten in de actie'

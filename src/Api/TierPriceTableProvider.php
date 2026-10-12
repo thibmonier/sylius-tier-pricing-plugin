@@ -50,6 +50,7 @@ final class TierPriceTableProvider implements ProviderInterface
                 'minQuantity' => $row->minQuantity,
                 'unitPrice' => $row->unitPrice,
                 'mixAndMatch' => $row->mixAndMatch,
+                'taxonBasis' => $row->taxonBasis,
             ];
         }
 

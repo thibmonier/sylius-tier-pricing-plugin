@@ -15,12 +15,16 @@ interface TierPriceCalculatorInterface
      * variant has no price in the channel).
      *
      * @param int|null $currentPrice price without tier; the catalog price of the channel when null
+     * @param array<int, int>|null $taxonQuantities quantity in the cart per taxon id (taxon rules counting the taxon); the product quantity when null
      */
-    public function quote(ProductVariantInterface $variant, ChannelInterface $channel, ?CustomerGroupInterface $customerGroup, int $lineQuantity, int $productQuantity, ?int $currentPrice = null): ?TierPriceQuote;
+    public function quote(ProductVariantInterface $variant, ChannelInterface $channel, ?CustomerGroupInterface $customerGroup, int $lineQuantity, int $productQuantity, ?int $currentPrice = null, ?array $taxonQuantities = null): ?TierPriceQuote;
 
     /**
      * Every price break of the variant, and the next one from the quantities already in the
-     * cart (`lineQuantity` of the variant, `productQuantity` of the whole product).
+     * cart (`lineQuantity` of the variant, `productQuantity` of the whole product,
+     * `taxonQuantities` per taxon id).
+     *
+     * @param array<int, int>|null $taxonQuantities
      */
-    public function table(ProductVariantInterface $variant, ChannelInterface $channel, ?CustomerGroupInterface $customerGroup, int $lineQuantity = 0, int $productQuantity = 0): TierPriceTable;
+    public function table(ProductVariantInterface $variant, ChannelInterface $channel, ?CustomerGroupInterface $customerGroup, int $lineQuantity = 0, int $productQuantity = 0, ?array $taxonQuantities = null): TierPriceTable;
 }

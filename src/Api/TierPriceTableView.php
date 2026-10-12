@@ -12,7 +12,10 @@ namespace Tmonier\SyliusTierPricingPlugin\Api;
 final class TierPriceTableView
 {
     /**
-     * @param list<array{minQuantity: int, unitPrice: int, mixAndMatch: bool}> $tiers
+     * `mixAndMatch`: every variant of the product counts; `taxonBasis`: every product of the
+     * taxon of the rule (and of its children) counts.
+     *
+     * @param list<array{minQuantity: int, unitPrice: int, mixAndMatch: bool, taxonBasis: bool}> $tiers
      */
     public function __construct(
         public readonly string $code,

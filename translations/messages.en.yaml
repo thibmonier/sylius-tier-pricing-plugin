@@ -25,6 +25,7 @@ tmonier_tier_pricing:
         nudge: 'Add %quantity% more to pay %price% per piece.'
         tier_applied: 'Volume price from %quantity% pieces'
         adjustment_label: 'Volume price from %quantity% pieces'
+        taxon_basis: 'All products of the category count towards the quantity.'
     form:
         all_customers: 'All customers'
         scope: 'Applies to'
@@ -37,12 +38,21 @@ tmonier_tier_pricing:
         amount: 'Unit price'
         amount_help: 'In the base currency of the channel, taxes as in the channel prices.'
         legal_help: 'In consumer channels, price breaks are shown as conditional prices ("from 10 pieces"), never as a reduction of the regular price. This is not legal advice.'
+        taxon_help: 'For a rule on every product of a taxon and of its children (main or not).'
+        cumulation: 'With catalog promotions'
+        cumulation_help: 'Cart promotions always apply on top of the tier price.'
     scope:
         product: 'Every variant of a product'
         variant: 'One variant'
+        taxon: 'Every product of a taxon'
     basis:
         line: 'Per variant'
         product: 'All variants of the product (mix and match)'
+        taxon: 'All products of the taxon (mix and match)'
     type:
         percentage_off: 'Percentage off the regular price'
         fixed_unit_price: 'Fixed unit price'
+    cumulation:
+        best_of: 'Best of the tier price and the promotion price'
+        on_top: 'Percentage on top of the promotion price'
+        skip_if_promoted: 'No tier price for promoted products'

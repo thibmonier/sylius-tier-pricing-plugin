@@ -8,6 +8,7 @@ use Doctrine\ORM\QueryBuilder;
 use Sylius\Bundle\ResourceBundle\Doctrine\ORM\EntityRepository;
 use Sylius\Component\Core\Model\ChannelInterface;
 use Sylius\Component\Core\Model\ProductInterface;
+use Sylius\Component\Core\Model\ProductTaxonInterface;
 use Sylius\Component\Customer\Model\CustomerGroupInterface;
 use Tmonier\SyliusTierPricingPlugin\Entity\TierPriceRuleInterface;
 use Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceRuleData;
@@ -17,11 +18,17 @@ class TierPriceRuleRepository extends EntityRepository implements TierPriceRuleR
     public function findCandidateData(ChannelInterface $channel, ProductInterface $product, ?CustomerGroupInterface $customerGroup): array
     {
         $queryBuilder = $this->createQueryBuilder('o')
-            ->select('o.id', 'o.scope', 'IDENTITY(o.variant) AS variantId', 'IDENTITY(o.customerGroup) AS customerGroupId', 'o.quantityBasis', 'o.minQuantity', 'o.type', 'o.value', 'o.startsAt', 'o.endsAt')
+            ->select('o.id', 'o.scope', 'IDENTITY(o.variant) AS variantId', 'IDENTITY(o.customerGroup) AS customerGroupId', 'o.quantityBasis', 'o.minQuantity', 'o.type', 'o.value', 'o.startsAt', 'o.endsAt', 'o.cumulation', 'taxon.id AS taxonId', 'taxon.level AS taxonLevel')
             ->leftJoin('o.variant', 'variant')
+            ->leftJoin('o.taxon', 'taxon')
             ->andWhere('o.channel = :channel')
             ->andWhere('o.enabled = true')
-            ->andWhere('o.product = :product OR variant.product = :product')
+            // Taxon rules: the product is in the taxon or in one of its children, through any of
+            // its taxons (nested set of the taxon tree).
+            ->andWhere(sprintf(
+                'o.product = :product OR variant.product = :product OR (o.taxon IS NOT NULL AND EXISTS (SELECT productTaxon.id FROM %s productTaxon INNER JOIN productTaxon.taxon productTaxonTaxon WHERE productTaxon.product = :product AND productTaxonTaxon.root = taxon.root AND productTaxonTaxon.left >= taxon.left AND productTaxonTaxon.right <= taxon.right))',
+                ProductTaxonInterface::class,
+            ))
             ->setParameter('channel', $channel)
             ->setParameter('product', $product)
             ->orderBy('o.id', 'ASC')
@@ -32,7 +39,7 @@ class TierPriceRuleRepository extends EntityRepository implements TierPriceRuleR
             $queryBuilder->andWhere('o.customerGroup IS NULL OR o.customerGroup = :customerGroup')->setParameter('customerGroup', $customerGroup);
         }
 
-        /** @var list<array{id: int|string, scope: string, variantId: int|string|null, customerGroupId: int|string|null, quantityBasis: string, minQuantity: int|string, type: string, value: int|string, startsAt: \DateTimeInterface|null, endsAt: \DateTimeInterface|null}> $rows */
+        /** @var list<array{id: int|string, scope: string, variantId: int|string|null, customerGroupId: int|string|null, quantityBasis: string, minQuantity: int|string, type: string, value: int|string, startsAt: \DateTimeInterface|null, endsAt: \DateTimeInterface|null, cumulation: string, taxonId: int|string|null, taxonLevel: int|string|null}> $rows */
         $rows = $queryBuilder->getQuery()->getArrayResult();
 
         return array_map(static fn (array $row): TierPriceRuleData => new TierPriceRuleData(
@@ -45,6 +52,9 @@ class TierPriceRuleRepository extends EntityRepository implements TierPriceRuleR
             (int) $row['value'],
             null === $row['startsAt'] ? null : \DateTimeImmutable::createFromInterface($row['startsAt']),
             null === $row['endsAt'] ? null : \DateTimeImmutable::createFromInterface($row['endsAt']),
+            TierPriceRuleInterface::SCOPE_TAXON === $row['scope'] && null !== $row['taxonId'] ? (int) $row['taxonId'] : null,
+            TierPriceRuleInterface::SCOPE_TAXON === $row['scope'] && null !== $row['taxonLevel'] ? (int) $row['taxonLevel'] : null,
+            $row['cumulation'],
         ), $rows);
     }
 
@@ -67,6 +77,8 @@ class TierPriceRuleRepository extends EntityRepository implements TierPriceRuleR
         }
         if (TierPriceRuleInterface::SCOPE_VARIANT === $rule->getScope()) {
             $queryBuilder->andWhere('o.variant = :variant')->setParameter('variant', $rule->getVariant());
+        } elseif (TierPriceRuleInterface::SCOPE_TAXON === $rule->getScope()) {
+            $queryBuilder->andWhere('o.taxon = :taxon')->setParameter('taxon', $rule->getTaxon());
         } else {
             $queryBuilder->andWhere('o.product = :product')->setParameter('product', $rule->getProduct());
         }
@@ -110,19 +122,21 @@ class TierPriceRuleRepository extends EntityRepository implements TierPriceRuleR
         // product): to-one associations, and the product translations of the admin locale only
         // (one row per rule, so the pagination is not affected).
         $queryBuilder = $this->createQueryBuilder('o')
-            ->addSelect('channel', 'baseCurrency', 'customerGroup', 'product', 'variant', 'variantProduct')
+            ->addSelect('channel', 'baseCurrency', 'customerGroup', 'product', 'variant', 'variantProduct', 'taxon')
             ->innerJoin('o.channel', 'channel')
             ->leftJoin('channel.baseCurrency', 'baseCurrency')
             ->leftJoin('o.customerGroup', 'customerGroup')
             ->leftJoin('o.product', 'product')
             ->leftJoin('o.variant', 'variant')
             ->leftJoin('variant.product', 'variantProduct')
+            ->leftJoin('o.taxon', 'taxon')
         ;
         if (null !== $localeCode) {
             $queryBuilder
-                ->addSelect('productTranslation', 'variantProductTranslation')
+                ->addSelect('productTranslation', 'variantProductTranslation', 'taxonTranslation')
                 ->leftJoin('product.translations', 'productTranslation', 'WITH', 'productTranslation.locale = :localeCode')
                 ->leftJoin('variantProduct.translations', 'variantProductTranslation', 'WITH', 'variantProductTranslation.locale = :localeCode')
+                ->leftJoin('taxon.translations', 'taxonTranslation', 'WITH', 'taxonTranslation.locale = :localeCode')
                 ->setParameter('localeCode', $localeCode)
             ;
         }

@@ -41,8 +41,8 @@ final class ApiTest extends WebTestCase
         // As stored, like the variant price; the rate of the variant is not included in prices.
         self::assertFalse($data['taxIncluded']);
         self::assertSame([
-            ['minQuantity' => 1, 'unitPrice' => 1000, 'mixAndMatch' => false],
-            ['minQuantity' => 10, 'unitPrice' => 900, 'mixAndMatch' => true],
+            ['minQuantity' => 1, 'unitPrice' => 1000, 'mixAndMatch' => false, 'taxonBasis' => false],
+            ['minQuantity' => 10, 'unitPrice' => 900, 'mixAndMatch' => true, 'taxonBasis' => false],
         ], $data['tiers']);
 
         $this->client->request('GET', '/api/v2/shop/product-variants/unknown-variant/tier-prices', server: ['HTTP_ACCEPT' => 'application/json']);
@@ -167,5 +167,44 @@ final class ApiTest extends WebTestCase
         $repository = self::getContainer()->get('tmonier_tier_pricing.repository.tier_price_rule');
 
         return $repository;
+    }
+
+    public function testTaxonRulesAndCumulationThroughTheAdminApi(): void
+    {
+        $channel = $this->catalog()->channel();
+        $tools = $this->catalog()->taxon();
+        $headers = $this->adminHeaders();
+
+        $this->client->request('POST', '/api/v2/admin/tier-price-rules', server: $headers, content: (string) json_encode([
+            'channel' => sprintf('/api/v2/admin/channels/%s', (string) $channel->getCode()),
+            'scope' => 'taxon',
+            'taxon' => sprintf('/api/v2/admin/taxons/%s', (string) $tools->getCode()),
+            'quantityBasis' => 'taxon',
+            'minQuantity' => 10,
+            'type' => 'percentage_off',
+            'value' => 1000,
+            'cumulation' => 'skip_if_promoted',
+        ]));
+        self::assertResponseStatusCodeSame(201, (string) $this->client->getResponse()->getContent());
+        $created = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertIsArray($created);
+        self::assertSame('skip_if_promoted', $created['cumulation'] ?? null);
+        self::assertSame(sprintf('/api/v2/admin/taxons/%s', (string) $tools->getCode()), $created['taxon'] ?? null);
+
+        // 1.0 clients (no cumulation): best of.
+        $product = $this->catalog()->product($channel);
+        $this->client->request('POST', '/api/v2/admin/tier-price-rules', server: $headers, content: (string) json_encode([
+            'channel' => sprintf('/api/v2/admin/channels/%s', (string) $channel->getCode()),
+            'scope' => 'product',
+            'product' => sprintf('/api/v2/admin/products/%s', (string) $product->getCode()),
+            'minQuantity' => 10,
+            'type' => 'percentage_off',
+            'value' => 500,
+        ]));
+        self::assertResponseStatusCodeSame(201);
+        $created = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertIsArray($created);
+        self::assertSame('best_of', $created['cumulation'] ?? null);
+        self::assertNull($created['taxon'] ?? null);
     }
 }

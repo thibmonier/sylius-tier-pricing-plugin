@@ -25,6 +25,7 @@ tmonier_tier_pricing:
         nudge: 'Noch %quantity% Stück mehr und Sie zahlen %price% pro Stück.'
         tier_applied: 'Staffelpreis ab %quantity% Stück'
         adjustment_label: 'Staffelpreis ab %quantity% Stück'
+        taxon_basis: 'Alle Produkte der Kategorie zählen zur Menge.'
     form:
         all_customers: 'Alle Kunden'
         scope: 'Gilt für'
@@ -37,12 +38,21 @@ tmonier_tier_pricing:
         amount: 'Stückpreis'
         amount_help: 'In der Basiswährung des Kanals, Steuern wie in den Kanalpreisen.'
         legal_help: 'In Verbraucherkanälen werden Preisstaffeln als bedingte Preise („ab 10 Stück“) angezeigt, nie als Ermäßigung des regulären Preises. Dies ist keine Rechtsberatung.'
+        taxon_help: 'Für eine Regel auf alle Produkte eines Taxons und seiner Unterkategorien (Haupttaxon oder nicht).'
+        cumulation: 'Mit Katalogaktionen'
+        cumulation_help: 'Warenkorbaktionen gelten immer zusätzlich zum Staffelpreis.'
     scope:
         product: 'Alle Varianten eines Produkts'
         variant: 'Eine Variante'
+        taxon: 'Alle Produkte eines Taxons'
     basis:
         line: 'Pro Variante'
         product: 'Alle Varianten des Produkts (Mix & Match)'
+        taxon: 'Alle Produkte des Taxons (gemischt)'
     type:
         percentage_off: 'Prozentualer Abzug vom regulären Preis'
         fixed_unit_price: 'Fester Stückpreis'
+    cumulation:
+        best_of: 'Der bessere von Staffelpreis und Aktionspreis'
+        on_top: 'Prozentsatz zusätzlich zum Aktionspreis'
+        skip_if_promoted: 'Kein Staffelpreis für Produkte in Aktion'

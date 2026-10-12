@@ -8,11 +8,16 @@ use Tmonier\SyliusTierPricingPlugin\Entity\TierPriceRuleInterface;
 
 /**
  * One rule per line. `value` is an amount in the channel base currency (`12.50`) for a fixed
- * unit price, a percentage (`7.5`) for a percentage off. Dates: ISO 8601 or empty.
+ * unit price, a percentage (`7.5`) for a percentage off. Dates: ISO 8601 or empty. `taxon`: code
+ * of the taxon of a taxon rule; `cumulation`: best_of (default when empty), on_top or
+ * skip_if_promoted. Files of 1.0 (without the last two columns) are still imported.
  */
 final class TierPriceRuleCsvFormat
 {
-    public const HEADER = ['channel', 'customer_group', 'scope', 'product', 'variant', 'quantity_basis', 'min_quantity', 'type', 'value', 'enabled', 'starts_at', 'ends_at'];
+    public const HEADER = ['channel', 'customer_group', 'scope', 'product', 'variant', 'quantity_basis', 'min_quantity', 'type', 'value', 'enabled', 'starts_at', 'ends_at', 'taxon', 'cumulation'];
+
+    /** Header of the 1.0 files. */
+    public const HEADER_1_0 = ['channel', 'customer_group', 'scope', 'product', 'variant', 'quantity_basis', 'min_quantity', 'type', 'value', 'enabled', 'starts_at', 'ends_at'];
 
     public static function formatValue(string $type, int $value): string
     {

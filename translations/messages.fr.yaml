@@ -25,6 +25,7 @@ tmonier_tier_pricing:
         nudge: 'Ajoutez-en %quantity% de plus pour payer %price% la pièce.'
         tier_applied: 'Prix dégressif dès %quantity% pièces'
         adjustment_label: 'Prix dégressif dès %quantity% pièces'
+        taxon_basis: 'Tous les produits de la catégorie comptent dans la quantité.'
     form:
         all_customers: 'Tous les clients'
         scope: 'S’applique à'
@@ -37,12 +38,21 @@ tmonier_tier_pricing:
         amount: 'Prix unitaire'
         amount_help: 'Dans la devise de base du canal, taxes comme dans les prix du canal.'
         legal_help: 'Dans les canaux grand public, les paliers sont affichés comme des prix conditionnels (« dès 10 pièces »), jamais comme une réduction du prix habituel. Ceci n’est pas un conseil juridique.'
+        taxon_help: 'Pour une règle sur tous les produits d''un taxon et de ses enfants (principal ou non).'
+        cumulation: 'Avec les promotions catalogue'
+        cumulation_help: 'Les promotions panier s''appliquent toujours en plus du prix dégressif.'
     scope:
         product: 'Toutes les déclinaisons d’un produit'
         variant: 'Une déclinaison'
+        taxon: 'Tous les produits d''un taxon'
     basis:
         line: 'Par déclinaison'
         product: 'Toutes les déclinaisons du produit (panachage)'
+        taxon: 'Tous les produits du taxon (panachage)'
     type:
         percentage_off: 'Pourcentage de remise sur le prix habituel'
         fixed_unit_price: 'Prix unitaire fixe'
+    cumulation:
+        best_of: 'Le meilleur du prix dégressif et du prix promotionnel'
+        on_top: 'Pourcentage en plus du prix promotionnel'
+        skip_if_promoted: 'Pas de prix dégressif pour les produits en promotion'

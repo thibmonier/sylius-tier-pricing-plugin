@@ -31,7 +31,7 @@
                             {% if loop.first %}
                                 {{ 'tmonier_tier_pricing.ui.from_one'|trans }}
                             {% else %}
-                                {{ 'tmonier_tier_pricing.ui.from_quantity'|trans({'%quantity%': row.minQuantity}) }}{% if row.mixAndMatch %} *{% endif %}
+                                {{ 'tmonier_tier_pricing.ui.from_quantity'|trans({'%quantity%': row.minQuantity}) }}{% if row.mixAndMatch %} *{% endif %}{% if row.taxonBasis %} **{% endif %}
                             {% endif %}
                         </td>
                         <td class="text-end fw-semibold" {{ sylius_test_html_attribute('tmonier-tier-price') }}>
@@ -49,6 +49,7 @@
                 <span {{ sylius_test_html_attribute('tmonier-tier-tax-label') }}>{{ (tax_convention == 'included' ? 'tmonier_tier_pricing.ui.prices_incl_tax' : 'tmonier_tier_pricing.ui.prices_excl_tax')|trans }}</span>
             {% endif %}
             {% if table.hasMixAndMatch %}<br>* {{ 'tmonier_tier_pricing.ui.mix_and_match'|trans }}{% endif %}
+            {% if table.hasTaxonBasis %}<br><span {{ sylius_test_html_attribute('tmonier-tier-taxon-basis') }}>** {{ 'tmonier_tier_pricing.ui.taxon_basis'|trans }}</span>{% endif %}
         </div>
         {% if table.nudge is not null %}
             <div class="alert alert-info py-2 mt-2 mb-0 small" {{ sylius_test_html_attribute('tmonier-tier-nudge') }}>

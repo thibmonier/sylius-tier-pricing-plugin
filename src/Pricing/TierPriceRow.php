@@ -13,6 +13,8 @@ final class TierPriceRow
         public readonly float $percentage,
         /** The threshold counts every variant of the product. */
         public readonly bool $mixAndMatch,
+        /** The threshold counts every product of the taxon of the rule (and of its children). */
+        public readonly bool $taxonBasis = false,
     ) {
     }
 }

@@ -16,7 +16,10 @@ final class CsvImportExportTest extends KernelTestCase
 {
     use TierPricingTestTrait;
 
+    /** Files of 1.0 are still imported. */
     private const HEADER = "channel,customer_group,scope,product,variant,quantity_basis,min_quantity,type,value,enabled,starts_at,ends_at\n";
+
+    private const HEADER_1_1 = "channel,customer_group,scope,product,variant,quantity_basis,min_quantity,type,value,enabled,starts_at,ends_at,taxon,cumulation\n";
 
     protected function setUp(): void
     {
@@ -123,8 +126,8 @@ final class CsvImportExportTest extends KernelTestCase
             $export->execute(['file' => $file, '--channel' => $channel->getCode()]);
             self::assertSame(0, $export->getStatusCode());
             $exported = (string) file_get_contents($file);
-            self::assertStringStartsWith(self::HEADER, $exported);
-            self::assertStringContainsString(sprintf("%s,,product,%s,,line,20,fixed_unit_price,9.99,1,,\n", $channel->getCode(), $product->getCode()), $exported);
+            self::assertStringStartsWith(self::HEADER_1_1, $exported);
+            self::assertStringContainsString(sprintf("%s,,product,%s,,line,20,fixed_unit_price,9.99,1,,,,best_of\n", $channel->getCode(), $product->getCode()), $exported);
         } finally {
             @unlink($file);
         }
@@ -258,5 +261,30 @@ final class CsvImportExportTest extends KernelTestCase
         $importer = self::getContainer()->get('tmonier_tier_pricing.csv.importer');
 
         return $importer;
+    }
+
+    public function testTaxonRulesAndCumulationAreImportedAndExported(): void
+    {
+        $channel = $this->catalog()->channel();
+        $tools = $this->catalog()->taxon();
+
+        $result = $this->importer()->import($this->stream(self::HEADER_1_1 . sprintf("%s,,taxon,,,taxon,10,percentage_off,10,1,,,%s,on_top\n", $channel->getCode(), $tools->getCode())));
+
+        self::assertSame([], $result->errors);
+        self::assertSame(1, $result->created);
+        $rule = $this->entityManager()->getRepository(TierPriceRuleInterface::class)->findOneBy(['taxon' => $tools->getId()]);
+        self::assertInstanceOf(TierPriceRuleInterface::class, $rule);
+        self::assertSame(TierPriceRuleInterface::CUMULATION_ON_TOP, $rule->getCumulation());
+
+        $unknown = $this->importer()->import($this->stream(self::HEADER_1_1 . sprintf("%s,,taxon,,,line,10,percentage_off,10,1,,,nope,\n", $channel->getCode())));
+        self::assertStringContainsString('unknown taxon "nope"', implode(' ', $unknown->errors));
+
+        $stream = fopen('php://memory', 'w+');
+        self::assertIsResource($stream);
+        $exporter = self::getContainer()->get('tmonier_tier_pricing.csv.exporter');
+        self::assertInstanceOf(\Tmonier\SyliusTierPricingPlugin\Csv\TierPriceRuleCsvExporter::class, $exporter);
+        $exporter->export($stream, (string) $channel->getCode());
+        rewind($stream);
+        self::assertStringContainsString(sprintf(",taxon,10,percentage_off,10,1,,,%s,on_top\n", $tools->getCode()), (string) stream_get_contents($stream));
     }
 }

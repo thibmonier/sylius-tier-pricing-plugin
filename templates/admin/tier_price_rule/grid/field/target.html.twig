@@ -6,6 +6,11 @@
         {# Code only: the variant name would cost a translation query per row. #}
         <div class="text-secondary small">{{ 'sylius.ui.variant'|trans }}: {{ rule.variant.code }}</div>
     </div>
+{% elseif rule.scope == 'taxon' and rule.taxon is not null %}
+    <div {{ sylius_test_html_attribute('tmonier-tier-rule-target', rule.taxon.code) }}>
+        <a href="{{ path('sylius_admin_taxon_update', {id: rule.taxon.id}) }}">{{ rule.taxon.name|default(rule.taxon.code) }}</a>
+        <div class="text-secondary small">{{ 'tmonier_tier_pricing.scope.taxon'|trans }} ({{ rule.taxon.code }})</div>
+    </div>
 {% elseif rule.product is not null %}
     <div {{ sylius_test_html_attribute('tmonier-tier-rule-target', rule.product.code) }}>
         <a href="{{ path('sylius_admin_product_update', {id: rule.product.id}) }}">{{ rule.product.name|default(rule.product.code) }}</a>

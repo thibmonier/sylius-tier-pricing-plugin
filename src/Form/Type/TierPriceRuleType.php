@@ -6,6 +6,7 @@ namespace Tmonier\SyliusTierPricingPlugin\Form\Type;
 
 use Sylius\Bundle\AdminBundle\Form\Type\ProductAutocompleteType;
 use Sylius\Bundle\AdminBundle\Form\Type\ProductVariantAutocompleteType;
+use Sylius\Bundle\AdminBundle\Form\Type\TaxonAutocompleteType;
 use Sylius\Bundle\ChannelBundle\Form\Type\ChannelChoiceType;
 use Sylius\Bundle\CustomerBundle\Form\Type\CustomerGroupChoiceType;
 use Sylius\Bundle\ResourceBundle\Form\Type\AbstractResourceType;
@@ -44,6 +45,7 @@ final class TierPriceRuleType extends AbstractResourceType
                 'choices' => [
                     'tmonier_tier_pricing.scope.product' => TierPriceRuleInterface::SCOPE_PRODUCT,
                     'tmonier_tier_pricing.scope.variant' => TierPriceRuleInterface::SCOPE_VARIANT,
+                    'tmonier_tier_pricing.scope.taxon' => TierPriceRuleInterface::SCOPE_TAXON,
                 ],
                 'expanded' => true,
             ])
@@ -57,11 +59,17 @@ final class TierPriceRuleType extends AbstractResourceType
                 'required' => false,
                 'help' => 'tmonier_tier_pricing.form.variant_help',
             ])
+            ->add('taxon', TaxonAutocompleteType::class, [
+                'label' => 'sylius.ui.taxon',
+                'required' => false,
+                'help' => 'tmonier_tier_pricing.form.taxon_help',
+            ])
             ->add('quantityBasis', ChoiceType::class, [
                 'label' => 'tmonier_tier_pricing.form.quantity_basis',
                 'choices' => [
                     'tmonier_tier_pricing.basis.line' => TierPriceRuleInterface::BASIS_LINE,
                     'tmonier_tier_pricing.basis.product' => TierPriceRuleInterface::BASIS_PRODUCT,
+                    'tmonier_tier_pricing.basis.taxon' => TierPriceRuleInterface::BASIS_TAXON,
                 ],
                 'expanded' => true,
             ])
@@ -95,6 +103,18 @@ final class TierPriceRuleType extends AbstractResourceType
                 'divisor' => 100,
                 // The model data of the money field is already in minor units (divisor 100).
                 'constraints' => [new Range(min: 0, max: TierPriceRuleInterface::MAX_AMOUNT, groups: ['sylius'])],
+            ])
+            ->add('cumulation', ChoiceType::class, [
+                'label' => 'tmonier_tier_pricing.form.cumulation',
+                'help' => 'tmonier_tier_pricing.form.cumulation_help',
+                'choices' => [
+                    'tmonier_tier_pricing.cumulation.best_of' => TierPriceRuleInterface::CUMULATION_BEST_OF,
+                    'tmonier_tier_pricing.cumulation.on_top' => TierPriceRuleInterface::CUMULATION_ON_TOP,
+                    'tmonier_tier_pricing.cumulation.skip_if_promoted' => TierPriceRuleInterface::CUMULATION_SKIP_IF_PROMOTED,
+                ],
+                'expanded' => true,
+                // Forms and API clients of 1.0 do not send it.
+                'empty_data' => TierPriceRuleInterface::CUMULATION_BEST_OF,
             ])
             ->add('enabled', CheckboxType::class, [
                 'label' => 'sylius.ui.enabled',
@@ -136,10 +156,14 @@ final class TierPriceRuleType extends AbstractResourceType
                     $rule->setValue(is_numeric($amount) ? (int) $amount : -1);
                 }
                 // Only the target of the scope is kept.
-                if (TierPriceRuleInterface::SCOPE_VARIANT === $rule->getScope()) {
-                    $rule->setProduct(null);
-                } else {
+                if (TierPriceRuleInterface::SCOPE_VARIANT !== $rule->getScope()) {
                     $rule->setVariant(null);
+                }
+                if (TierPriceRuleInterface::SCOPE_PRODUCT !== $rule->getScope()) {
+                    $rule->setProduct(null);
+                }
+                if (TierPriceRuleInterface::SCOPE_TAXON !== $rule->getScope()) {
+                    $rule->setTaxon(null);
                 }
             })
         ;

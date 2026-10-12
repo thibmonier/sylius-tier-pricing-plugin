@@ -4,7 +4,8 @@
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://symfony.com/schema/dic/serializer-mapping https://symfony.com/schema/dic/serializer-mapping/serializer-mapping-1.0.xsd"
 >
-    <!-- value: cents for fixed_unit_price, basis points (1000 = 10 %) for percentage_off. -->
+    <!-- value: cents for fixed_unit_price, basis points (1000 = 10 %) for percentage_off.
+         taxon: IRI of the taxon of a taxon rule; cumulation: best_of (default), on_top, skip_if_promoted. -->
     <class name="Tmonier\SyliusTierPricingPlugin\Entity\TierPriceRule">
         <attribute name="id">
             <group>tmonier_tier_pricing:admin:tier_price_rule:index</group>
@@ -46,6 +47,12 @@
             <group>tmonier_tier_pricing:admin:tier_price_rule:create</group>
             <group>tmonier_tier_pricing:admin:tier_price_rule:update</group>
         </attribute>
+        <attribute name="taxon">
+            <group>tmonier_tier_pricing:admin:tier_price_rule:index</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:show</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:create</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:update</group>
+        </attribute>
         <attribute name="quantityBasis">
             <group>tmonier_tier_pricing:admin:tier_price_rule:index</group>
             <group>tmonier_tier_pricing:admin:tier_price_rule:show</group>
@@ -65,6 +72,12 @@
             <group>tmonier_tier_pricing:admin:tier_price_rule:update</group>
         </attribute>
         <attribute name="value">
+            <group>tmonier_tier_pricing:admin:tier_price_rule:index</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:show</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:create</group>
+            <group>tmonier_tier_pricing:admin:tier_price_rule:update</group>
+        </attribute>
+        <attribute name="cumulation">
             <group>tmonier_tier_pricing:admin:tier_price_rule:index</group>
             <group>tmonier_tier_pricing:admin:tier_price_rule:show</group>
             <group>tmonier_tier_pricing:admin:tier_price_rule:create</group>

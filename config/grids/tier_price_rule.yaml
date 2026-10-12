@@ -65,7 +65,7 @@ sylius_grid:
                     type: string
                     label: sylius.ui.search
                     options:
-                        fields: [product.code, variant.code, variant.product.code]
+                        fields: [product.code, variant.code, variant.product.code, taxon.code]
                 channel:
                     type: entity
                     label: sylius.ui.channel

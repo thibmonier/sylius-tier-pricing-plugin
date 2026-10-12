@@ -25,6 +25,7 @@ tmonier_tier_pricing:
         nudge: 'Añada %quantity% más para pagar %price% por unidad.'
         tier_applied: 'Precio por volumen desde %quantity% unidades'
         adjustment_label: 'Precio por volumen desde %quantity% unidades'
+        taxon_basis: 'Todos los productos de la categoría cuentan para la cantidad.'
     form:
         all_customers: 'Todos los clientes'
         scope: 'Se aplica a'
@@ -37,12 +38,21 @@ tmonier_tier_pricing:
         amount: 'Precio unitario'
         amount_help: 'En la moneda base del canal, impuestos como en los precios del canal.'
         legal_help: 'En los canales de consumo, los tramos se muestran como precios condicionados («desde 10 unidades»), nunca como una rebaja del precio habitual. Esto no es asesoramiento jurídico.'
+        taxon_help: 'Para una regla sobre todos los productos de un taxón y de sus hijos (principal o no).'
+        cumulation: 'Con las promociones de catálogo'
+        cumulation_help: 'Las promociones de carrito siempre se aplican además del precio por volumen.'
     scope:
         product: 'Todas las variantes de un producto'
         variant: 'Una variante'
+        taxon: 'Todos los productos de un taxón'
     basis:
         line: 'Por variante'
         product: 'Todas las variantes del producto (combinables)'
+        taxon: 'Todos los productos del taxón (combinables)'
     type:
         percentage_off: 'Porcentaje sobre el precio habitual'
         fixed_unit_price: 'Precio unitario fijo'
+    cumulation:
+        best_of: 'El mejor entre el precio por volumen y el precio promocional'
+        on_top: 'Porcentaje adicional sobre el precio promocional'
+        skip_if_promoted: 'Sin precio por volumen para productos en promoción'

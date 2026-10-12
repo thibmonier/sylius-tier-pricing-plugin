@@ -18,6 +18,7 @@ use Tmonier\SyliusTierPricingPlugin\OrderProcessing\TierPriceExemptionCheckerInt
 use Tmonier\SyliusTierPricingPlugin\OrderProcessing\TierPriceOrderProcessor;
 use Tmonier\SyliusTierPricingPlugin\Pricing\OrderCustomerGroupResolver;
 use Tmonier\SyliusTierPricingPlugin\Pricing\PriceDisplayResolverInterface;
+use Tmonier\SyliusTierPricingPlugin\Pricing\TaxonQuantityCounter;
 use Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceCalculatorInterface;
 use Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceTable;
 use Tmonier\SyliusTierPricingPlugin\Repository\TierPriceRuleRepositoryInterface;
@@ -37,6 +38,7 @@ final class TierPricingExtension extends AbstractExtension
         private readonly OrderCustomerGroupResolver $customerGroupResolver,
         private readonly bool $productPage,
         private readonly bool $cart,
+        private readonly TaxonQuantityCounter $taxonQuantityCounter = new TaxonQuantityCounter(),
     ) {
     }
 
@@ -67,8 +69,8 @@ final class TierPricingExtension extends AbstractExtension
             return null;
         }
 
-        [$lineQuantity, $productQuantity] = $this->cartQuantities($variant);
-        $table = $this->calculator->table($variant, $channel, $this->customerContext->getCustomer()?->getGroup(), $lineQuantity, $productQuantity);
+        [$lineQuantity, $productQuantity, $taxonQuantities] = $this->cartQuantities($variant);
+        $table = $this->calculator->table($variant, $channel, $this->customerContext->getCustomer()?->getGroup(), $lineQuantity, $productQuantity, $taxonQuantities);
 
         return $table->hasTiers() ? $table : null;
     }
@@ -87,8 +89,8 @@ final class TierPricingExtension extends AbstractExtension
             return null;
         }
 
-        [$lineQuantity, $productQuantity] = $this->orderQuantities($order, $variant);
-        $table = $this->calculator->table($variant, $channel, $this->customerGroupResolver->resolve($order), $lineQuantity, $productQuantity);
+        [$lineQuantity, $productQuantity, $taxonQuantities] = $this->orderQuantities($order, $variant);
+        $table = $this->calculator->table($variant, $channel, $this->customerGroupResolver->resolve($order), $lineQuantity, $productQuantity, $taxonQuantities);
 
         return $table->hasTiers() ? $table : null;
     }
@@ -141,27 +143,29 @@ final class TierPricingExtension extends AbstractExtension
         return null === $product->getId() ? [] : $this->ruleRepository->findByProduct($product);
     }
 
-    /** @return array{int, int} */
+    /** @return array{int, int, array<int, int>|null} */
     private function cartQuantities(ProductVariantInterface $variant): array
     {
         try {
             $cart = $this->cartContext->getCart();
         } catch (CartNotFoundException) {
-            return [0, 0];
+            return [0, 0, null];
         }
 
-        return $cart instanceof OrderInterface ? $this->orderQuantities($cart, $variant) : [0, 0];
+        return $cart instanceof OrderInterface ? $this->orderQuantities($cart, $variant) : [0, 0, null];
     }
 
-    /** @return array{int, int} quantity of the variant, of the product (mutable, non-exempt lines only, as the order processor counts) */
+    /** @return array{int, int, array<int, int>} quantity of the variant, of the product, per taxon (mutable, non-exempt lines only, as the order processor counts) */
     private function orderQuantities(OrderInterface $order, ProductVariantInterface $variant): array
     {
         $lineQuantity = 0;
         $productQuantity = 0;
+        $items = [];
         foreach ($order->getItems() as $item) {
             if ($item->isImmutable() || $this->exemptionChecker->isExempt($item)) {
                 continue;
             }
+            $items[] = $item;
             if ($item->getVariant() === $variant) {
                 $lineQuantity += $item->getQuantity();
             }
@@ -170,7 +174,7 @@ final class TierPricingExtension extends AbstractExtension
             }
         }
 
-        return [$lineQuantity, $productQuantity];
+        return [$lineQuantity, $productQuantity, $this->taxonQuantityCounter->count($items)];
     }
 
     private function channel(): ?ChannelInterface

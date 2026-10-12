@@ -25,6 +25,7 @@ tmonier_tier_pricing:
         nudge: 'Dodaj jeszcze %quantity% szt., aby płacić %price% za sztukę.'
         tier_applied: 'Cena progowa od %quantity% szt.'
         adjustment_label: 'Cena progowa od %quantity% szt.'
+        taxon_basis: 'Wszystkie produkty z kategorii wliczają się do ilości.'
     form:
         all_customers: 'Wszyscy klienci'
         scope: 'Dotyczy'
@@ -37,12 +38,21 @@ tmonier_tier_pricing:
         amount: 'Cena jednostkowa'
         amount_help: 'W walucie bazowej kanału, podatki jak w cenach kanału.'
         legal_help: 'W kanałach konsumenckich progi są pokazywane jako ceny warunkowe („od 10 szt.”), nigdy jako obniżka zwykłej ceny. To nie jest porada prawna.'
+        taxon_help: 'Dla reguły na wszystkie produkty taksonu i jego podkategorii (głównego lub nie).'
+        cumulation: 'Z promocjami katalogowymi'
+        cumulation_help: 'Promocje koszyka zawsze stosuje się dodatkowo do ceny progowej.'
     scope:
         product: 'Wszystkie warianty produktu'
         variant: 'Jeden wariant'
+        taxon: 'Wszystkie produkty taksonu'
     basis:
         line: 'Na wariant'
         product: 'Wszystkie warianty produktu (łączone)'
+        taxon: 'Wszystkie produkty taksonu (łączone)'
     type:
         percentage_off: 'Procent od zwykłej ceny'
         fixed_unit_price: 'Stała cena jednostkowa'
+    cumulation:
+        best_of: 'Lepsza z ceny progowej i ceny promocyjnej'
+        on_top: 'Procent dodatkowo od ceny promocyjnej'
+        skip_if_promoted: 'Brak ceny progowej dla produktów w promocji'

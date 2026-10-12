@@ -21,12 +21,13 @@ final class TierPriceRuleCsvExporter
     public function export($stream, ?string $channelCode = null): int
     {
         $queryBuilder = $this->entityManager->createQueryBuilder()
-            ->select('o', 'channel', 'customerGroup', 'product', 'variant')
+            ->select('o', 'channel', 'customerGroup', 'product', 'variant', 'taxon')
             ->from(TierPriceRuleInterface::class, 'o')
             ->innerJoin('o.channel', 'channel')
             ->leftJoin('o.customerGroup', 'customerGroup')
             ->leftJoin('o.product', 'product')
             ->leftJoin('o.variant', 'variant')
+            ->leftJoin('o.taxon', 'taxon')
             ->orderBy('o.id', 'ASC')
         ;
         if (null !== $channelCode) {
@@ -50,6 +51,8 @@ final class TierPriceRuleCsvExporter
                 $rule->isEnabled() ? '1' : '0',
                 $rule->getStartsAt()?->format(\DATE_ATOM) ?? '',
                 $rule->getEndsAt()?->format(\DATE_ATOM) ?? '',
+                TierPriceRuleInterface::SCOPE_TAXON === $rule->getScope() ? (string) $rule->getTaxon()?->getCode() : '',
+                $rule->getCumulation(),
             ], escape: '');
             ++$count;
             if (0 === $count % 500) {

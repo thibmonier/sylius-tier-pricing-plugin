@@ -25,6 +25,7 @@ tmonier_tier_pricing:
         nudge: 'Aggiungine altri %quantity% per pagare %price% al pezzo.'
         tier_applied: 'Prezzo a scaglioni da %quantity% pezzi'
         adjustment_label: 'Prezzo a scaglioni da %quantity% pezzi'
+        taxon_basis: 'Tutti i prodotti della categoria contano per la quantità.'
     form:
         all_customers: 'Tutti i clienti'
         scope: 'Si applica a'
@@ -37,12 +38,21 @@ tmonier_tier_pricing:
         amount: 'Prezzo unitario'
         amount_help: 'Nella valuta base del canale, imposte come nei prezzi del canale.'
         legal_help: 'Nei canali per i consumatori gli scaglioni sono mostrati come prezzi condizionati («da 10 pezzi»), mai come riduzione del prezzo abituale. Questa non è una consulenza legale.'
+        taxon_help: 'Per una regola su tutti i prodotti di un taxon e dei suoi figli (principale o no).'
+        cumulation: 'Con le promozioni di catalogo'
+        cumulation_help: 'Le promozioni del carrello si applicano sempre in aggiunta al prezzo a scaglioni.'
     scope:
         product: 'Tutte le varianti di un prodotto'
         variant: 'Una variante'
+        taxon: 'Tutti i prodotti di un taxon'
     basis:
         line: 'Per variante'
         product: 'Tutte le varianti del prodotto (combinabili)'
+        taxon: 'Tutti i prodotti del taxon (combinabili)'
     type:
         percentage_off: 'Percentuale sul prezzo abituale'
         fixed_unit_price: 'Prezzo unitario fisso'
+    cumulation:
+        best_of: 'Il migliore tra prezzo a scaglioni e prezzo promozionale'
+        on_top: 'Percentuale in aggiunta al prezzo promozionale'
+        skip_if_promoted: 'Nessun prezzo a scaglioni per i prodotti in promozione'

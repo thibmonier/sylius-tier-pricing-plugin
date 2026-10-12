@@ -26,22 +26,25 @@ final class ValidTierPriceRuleValidator extends ConstraintValidator
         }
 
         $valid = true;
-        if (TierPriceRuleInterface::SCOPE_VARIANT === $value->getScope() && null === $value->getVariant()) {
-            $this->context->buildViolation($constraint->targetMissing)->atPath('variant')->addViolation();
-            $valid = false;
-        }
-        if (TierPriceRuleInterface::SCOPE_PRODUCT === $value->getScope() && null === $value->getProduct()) {
-            $this->context->buildViolation($constraint->targetMissing)->atPath('product')->addViolation();
-            $valid = false;
-        }
         // Exactly one target, the one of the scope (also enforced by a CHECK constraint).
-        if (TierPriceRuleInterface::SCOPE_VARIANT === $value->getScope() && null !== $value->getProduct()) {
-            $this->context->buildViolation($constraint->targetMismatch)->atPath('product')->addViolation();
-            $valid = false;
+        $targets = ['product' => $value->getProduct(), 'variant' => $value->getVariant(), 'taxon' => $value->getTaxon()];
+        $expected = match ($value->getScope()) {
+            TierPriceRuleInterface::SCOPE_VARIANT => 'variant',
+            TierPriceRuleInterface::SCOPE_TAXON => 'taxon',
+            default => 'product',
+        };
+        foreach ($targets as $field => $target) {
+            if ($field === $expected && null === $target) {
+                $this->context->buildViolation($constraint->targetMissing)->atPath($field)->addViolation();
+                $valid = false;
+            } elseif ($field !== $expected && null !== $target) {
+                $this->context->buildViolation($constraint->targetMismatch)->atPath($field)->addViolation();
+                $valid = false;
+            }
         }
-        if (TierPriceRuleInterface::SCOPE_PRODUCT === $value->getScope() && null !== $value->getVariant()) {
-            $this->context->buildViolation($constraint->targetMismatch)->atPath('variant')->addViolation();
-            $valid = false;
+        // Counting the taxon only makes sense for a taxon rule.
+        if (TierPriceRuleInterface::BASIS_TAXON === $value->getQuantityBasis() && TierPriceRuleInterface::SCOPE_TAXON !== $value->getScope()) {
+            $this->context->buildViolation($constraint->taxonBasis)->atPath('quantityBasis')->addViolation();
         }
         if (TierPriceRuleInterface::TYPE_PERCENTAGE_OFF === $value->getType() && ($value->getValue() <= 0 || $value->getValue() > 10000)) {
             $this->context->buildViolation($constraint->percentageRange)->atPath('value')->addViolation();

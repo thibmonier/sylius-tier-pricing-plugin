@@ -124,4 +124,27 @@ final class RuleConstraintsTest extends KernelTestCase
 
         return $paths;
     }
+
+    public function testTheDatabaseChecksTheTargetOfATaxonRule(): void
+    {
+        $channel = $this->catalog()->channel();
+        $tools = $this->catalog()->taxon();
+        $product = $this->catalog()->product($channel);
+        $row = [
+            'channel_id' => $channel->getId(),
+            'taxon_id' => $tools->getId(),
+            'scope' => 'taxon',
+            'quantity_basis' => 'taxon',
+            'min_quantity' => 10,
+            'type' => 'percentage_off',
+            'value' => 500,
+            'enabled' => 1,
+            'created_at' => '2026-10-13 00:00:00',
+        ];
+        $this->connection()->insert('tmonier_tier_price_rule', $row);
+        self::assertSame('best_of', $this->connection()->fetchOne('SELECT cumulation FROM tmonier_tier_price_rule WHERE taxon_id = ?', [$tools->getId()]), 'column default');
+
+        $this->expectException(DbalException::class);
+        $this->connection()->insert('tmonier_tier_price_rule', ['product_id' => $product->getId(), 'min_quantity' => 20] + $row);
+    }
 }

@@ -18,6 +18,7 @@
                 <option name="choices">
                     <value>variant</value>
                     <value>product</value>
+                    <value>taxon</value>
                 </option>
                 <option name="groups">sylius</option>
             </constraint>
@@ -27,6 +28,7 @@
                 <option name="choices">
                     <value>line</value>
                     <value>product</value>
+                    <value>taxon</value>
                 </option>
                 <option name="groups">sylius</option>
             </constraint>
@@ -36,6 +38,16 @@
                 <option name="choices">
                     <value>fixed_unit_price</value>
                     <value>percentage_off</value>
+                </option>
+                <option name="groups">sylius</option>
+            </constraint>
+        </property>
+        <property name="cumulation">
+            <constraint name="Choice">
+                <option name="choices">
+                    <value>best_of</value>
+                    <value>on_top</value>
+                    <value>skip_if_promoted</value>
                 </option>
                 <option name="groups">sylius</option>
             </constraint>

@@ -5,9 +5,10 @@
     <div class="col-12 col-md-6">{{ form_row(form.customerGroup) }}</div>
 </div>
 <div class="row">
-    <div class="col-12 col-md-4">{{ form_row(form.scope) }}</div>
-    <div class="col-12 col-md-4">{{ form_row(form.product) }}</div>
-    <div class="col-12 col-md-4">{{ form_row(form.variant) }}</div>
+    <div class="col-12 col-md-3">{{ form_row(form.scope) }}</div>
+    <div class="col-12 col-md-3">{{ form_row(form.product) }}</div>
+    <div class="col-12 col-md-3">{{ form_row(form.variant) }}</div>
+    <div class="col-12 col-md-3">{{ form_row(form.taxon) }}</div>
 </div>
 <div class="row">
     <div class="col-12 col-md-4">{{ form_row(form.minQuantity) }}</div>
@@ -17,6 +18,9 @@
     <div class="col-12 col-md-4">{{ form_row(form.type) }}</div>
     <div class="col-12 col-md-4">{{ form_row(form.percentage) }}</div>
     <div class="col-12 col-md-4">{{ form_row(form.amount) }}</div>
+</div>
+<div class="row">
+    <div class="col-12">{{ form_row(form.cumulation) }}</div>
 </div>
 <div class="row">
     <div class="col-12 col-md-4">{{ form_row(form.startsAt) }}</div>

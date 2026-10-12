@@ -23,17 +23,17 @@ final class TierPriceCalculator implements TierPriceCalculatorInterface
     ) {
     }
 
-    public function quote(ProductVariantInterface $variant, ChannelInterface $channel, ?CustomerGroupInterface $customerGroup, int $lineQuantity, int $productQuantity, ?int $currentPrice = null): ?TierPriceQuote
+    public function quote(ProductVariantInterface $variant, ChannelInterface $channel, ?CustomerGroupInterface $customerGroup, int $lineQuantity, int $productQuantity, ?int $currentPrice = null, ?array $taxonQuantities = null): ?TierPriceQuote
     {
         $rules = $this->rules($variant, $channel, $customerGroup);
         if ([] === $rules) {
             return null;
         }
 
-        return $this->quoteFor($rules, $this->context($variant, $customerGroup, $lineQuantity, $productQuantity), $variant, $channel, $currentPrice);
+        return $this->quoteFor($rules, $this->context($variant, $customerGroup, $lineQuantity, $productQuantity, $taxonQuantities), $variant, $channel, $currentPrice);
     }
 
-    public function table(ProductVariantInterface $variant, ChannelInterface $channel, ?CustomerGroupInterface $customerGroup, int $lineQuantity = 0, int $productQuantity = 0): TierPriceTable
+    public function table(ProductVariantInterface $variant, ChannelInterface $channel, ?CustomerGroupInterface $customerGroup, int $lineQuantity = 0, int $productQuantity = 0, ?array $taxonQuantities = null): TierPriceTable
     {
         $rules = $this->rules($variant, $channel, $customerGroup);
         $context = $this->context($variant, $customerGroup, 1, 1);
@@ -62,6 +62,7 @@ final class TierPriceCalculator implements TierPriceCalculatorInterface
                 $quote->unitPrice,
                 round(($unitPrice - $quote->unitPrice) * 100 / max(1, $unitPrice), 1),
                 TierPriceRuleInterface::BASIS_PRODUCT === $quote->rule->quantityBasis,
+                TierPriceRuleInterface::BASIS_TAXON === $quote->rule->quantityBasis,
             );
             $lastPrice = $quote->unitPrice;
         }
@@ -70,7 +71,7 @@ final class TierPriceCalculator implements TierPriceCalculatorInterface
             return new TierPriceTable($rows);
         }
 
-        $current = $this->context($variant, $customerGroup, $lineQuantity, $productQuantity);
+        $current = $this->context($variant, $customerGroup, $lineQuantity, $productQuantity, $taxonQuantities);
         $currentUnitPrice = $this->quoteFor($rules, $current, $variant, $channel, null)->unitPrice ?? $unitPrice;
 
         return new TierPriceTable($rows, $this->nudge($rules, $current, $variant, $channel, $currentUnitPrice), $currentUnitPrice);
@@ -85,8 +86,7 @@ final class TierPriceCalculator implements TierPriceCalculatorInterface
     {
         $best = null;
         foreach ($rules as $rule) {
-            $quantity = TierPriceRuleInterface::BASIS_PRODUCT === $rule->quantityBasis ? $current->productQuantity : $current->lineQuantity;
-            $toAdd = $rule->minQuantity - $quantity;
+            $toAdd = $rule->minQuantity - $current->quantityFor($rule);
             if ($toAdd <= 0) {
                 continue;
             }
@@ -110,6 +110,7 @@ final class TierPriceCalculator implements TierPriceCalculatorInterface
             return null;
         }
         $currentPrice ??= $prices['current'];
+        $context = $context->withPromoted($prices['promoted']);
         $rule = $this->resolver->resolve($rules, $context, $prices['base'], $currentPrice, $prices['minimum']);
         if (null === $rule) {
             return null;
@@ -129,19 +130,20 @@ final class TierPriceCalculator implements TierPriceCalculatorInterface
         return $this->ruleProvider->getRules($channel, $product, $customerGroup);
     }
 
-    private function context(ProductVariantInterface $variant, ?CustomerGroupInterface $customerGroup, int $lineQuantity, int $productQuantity): TierPriceContext
+    /** @param array<int, int>|null $taxonQuantities */
+    private function context(ProductVariantInterface $variant, ?CustomerGroupInterface $customerGroup, int $lineQuantity, int $productQuantity, ?array $taxonQuantities = null): TierPriceContext
     {
         $variantId = $variant->getId();
         $groupId = $customerGroup?->getId();
 
-        return new TierPriceContext(is_int($variantId) ? $variantId : 0, is_int($groupId) ? $groupId : null, $lineQuantity, $productQuantity, $this->clock->now());
+        return new TierPriceContext(is_int($variantId) ? $variantId : 0, is_int($groupId) ? $groupId : null, $lineQuantity, $productQuantity, $this->clock->now(), $taxonQuantities);
     }
 
     /**
-     * Regular price (before catalog promotions: the base of a percentage), current price and
-     * floor of the variant in the channel.
+     * Regular price (before catalog promotions: the base of a percentage), current price, floor
+     * of the variant in the channel and whether a catalog promotion applies.
      *
-     * @return array{base: int, current: int, minimum: int}|null
+     * @return array{base: int, current: int, minimum: int, promoted: bool}|null
      */
     private function catalogPrices(ProductVariantInterface $variant, ChannelInterface $channel): ?array
     {
@@ -158,6 +160,6 @@ final class TierPriceCalculator implements TierPriceCalculatorInterface
             return null;
         }
 
-        return ['base' => max($base, $current), 'current' => $current, 'minimum' => $channelPricing->getMinimumPrice()];
+        return ['base' => max($base, $current), 'current' => $current, 'minimum' => $channelPricing->getMinimumPrice(), 'promoted' => !$channelPricing->getAppliedPromotions()->isEmpty()];
     }
 }

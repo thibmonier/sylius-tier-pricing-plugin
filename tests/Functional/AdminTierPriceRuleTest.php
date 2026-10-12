@@ -196,7 +196,7 @@ final class AdminTierPriceRuleTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(422);
         $content = (string) $this->client->getResponse()->getContent();
-        self::assertStringContainsString('Choose the product or the variant of the rule.', $content);
+        self::assertStringContainsString('Choose the product, the variant or the taxon of the rule.', $content);
         self::assertStringContainsString('The quantity must be between 2 and 1000000.', $content);
         self::assertCount(0, $this->repository()->findByProduct($product));
     }
@@ -237,5 +237,50 @@ final class AdminTierPriceRuleTest extends WebTestCase
         $repository = self::getContainer()->get('tmonier_tier_pricing.repository.tier_price_rule');
 
         return $repository;
+    }
+
+    public function testTheMerchantCreatesATaxonRule(): void
+    {
+        $channel = $this->catalog()->channel();
+        $tools = $this->catalog()->taxon();
+        $product = $this->catalog()->product($channel);
+        $this->loginAdmin();
+
+        $crawler = $this->client->request('GET', '/admin/tier-price-rules/new');
+        self::assertResponseIsSuccessful();
+        self::assertCount(1, $crawler->filter('#tmonier_tier_pricing_tier_price_rule_taxon'));
+        $fields = [
+            'channel' => (string) $channel->getCode(),
+            'scope' => 'taxon',
+            'taxon' => (string) $this->idOf($tools),
+            'quantityBasis' => 'taxon',
+            'minQuantity' => '10',
+            'type' => 'percentage_off',
+            'percentage' => '10',
+            'cumulation' => 'on_top',
+            'enabled' => '1',
+            '_token' => $this->csrfToken(),
+        ];
+        $this->client->request('POST', '/admin/tier-price-rules/new', ['tmonier_tier_pricing_tier_price_rule' => $fields]);
+        self::assertResponseRedirects();
+        $rule = $this->repository()->findOneBy(['taxon' => $tools]);
+        self::assertInstanceOf(TierPriceRuleInterface::class, $rule);
+        self::assertSame(TierPriceRuleInterface::SCOPE_TAXON, $rule->getScope());
+        self::assertSame(TierPriceRuleInterface::CUMULATION_ON_TOP, $rule->getCumulation());
+        self::assertSame(TierPriceRuleInterface::BASIS_TAXON, $rule->getQuantityBasis());
+
+        $crawler = $this->client->request('GET', sprintf('/admin/tier-price-rules/?criteria[search][value]=%s', (string) $tools->getCode()));
+        self::assertCount(1, $crawler->filter(sprintf('[data-test-tmonier-tier-rule-target="%s"]', (string) $tools->getCode())));
+        self::assertStringContainsString('on top of the promotion price', $crawler->filter('[data-test-tmonier-tier-rule-cumulation]')->text());
+
+        // Counting the taxon is only for taxon rules.
+        $this->client->request('POST', '/admin/tier-price-rules/new', ['tmonier_tier_pricing_tier_price_rule' => [
+            'scope' => 'product',
+            'product' => (string) $this->idOf($product),
+            'quantityBasis' => 'taxon',
+            'minQuantity' => '10',
+        ] + $fields]);
+        self::assertResponseStatusCodeSame(422);
+        self::assertStringContainsString('Only a taxon rule can count all the products of its taxon.', (string) $this->client->getResponse()->getContent());
     }
 }

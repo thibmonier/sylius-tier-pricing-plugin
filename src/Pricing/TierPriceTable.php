@@ -34,4 +34,15 @@ final class TierPriceTable
 
         return false;
     }
+
+    public function hasTaxonBasis(): bool
+    {
+        foreach ($this->rows as $row) {
+            if ($row->taxonBasis) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

@@ -1,10 +1,11 @@
 tmonier_tier_pricing:
     tier_price_rule:
-        target_missing: 'Kies het product of de variant van de regel.'
-        target_mismatch: 'Alleen het product of de variant, zoals gekozen bij "Geldt voor".'
+        target_missing: 'Kies het product, de variant of de taxon van de regel.'
+        target_mismatch: 'Alleen het product, de variant of de taxon, zoals gekozen bij "Geldt voor".'
         percentage_range: 'Het percentage moet tussen 0,01 en 100 liggen.'
         amount_range: 'Voer een stukprijs tussen 0 en %max% in.'
         dates_order: 'Het einde moet na het begin liggen.'
         duplicate: 'Er bestaat al een regel vanaf %quantity% stuks voor dit product, kanaal en deze klantengroep in deze periode.'
         channel_required: 'Kies een kanaal.'
         min_quantity_range: 'Het aantal moet tussen {{ min }} en {{ max }} liggen.'
+        taxon_basis: 'Alleen een taxonregel kan alle producten van zijn taxon tellen.'

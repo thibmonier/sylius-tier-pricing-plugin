@@ -7,6 +7,7 @@
         <indexes>
             <index name="tmonier_tier_price_rule_lookup_idx" columns="channel_id,product_id,enabled" />
             <index name="tmonier_tier_price_rule_variant_lookup_idx" columns="channel_id,variant_id,enabled" />
+            <index name="tmonier_tier_price_rule_taxon_lookup_idx" columns="channel_id,taxon_id,enabled" />
         </indexes>
 
         <id name="id" column="id" type="integer">
@@ -18,6 +19,11 @@
         <field name="minQuantity" column="min_quantity" type="integer" />
         <field name="type" column="type" type="string" length="32" />
         <field name="value" column="value" type="integer" />
+        <field name="cumulation" column="cumulation" type="string" length="32">
+            <options>
+                <option name="default">best_of</option>
+            </options>
+        </field>
         <field name="enabled" column="enabled" type="boolean" />
         <field name="startsAt" column="starts_at" type="datetime" nullable="true" />
         <field name="endsAt" column="ends_at" type="datetime" nullable="true" />
@@ -42,6 +48,10 @@
 
         <many-to-one field="variant" target-entity="Sylius\Component\Product\Model\ProductVariantInterface">
             <join-column name="variant_id" referenced-column-name="id" nullable="true" on-delete="CASCADE" />
+        </many-to-one>
+
+        <many-to-one field="taxon" target-entity="Sylius\Component\Taxonomy\Model\TaxonInterface">
+            <join-column name="taxon_id" referenced-column-name="id" nullable="true" on-delete="CASCADE" />
         </many-to-one>
     </mapped-superclass>
 

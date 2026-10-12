@@ -12,7 +12,9 @@ use Sylius\Component\Core\Model\CustomerInterface;
 use Sylius\Component\Core\Model\OrderInterface;
 use Sylius\Component\Core\Model\OrderItemInterface;
 use Sylius\Component\Core\Model\ProductInterface;
+use Sylius\Component\Core\Model\ProductTaxonInterface;
 use Sylius\Component\Core\Model\ProductVariantInterface;
+use Sylius\Component\Core\Model\TaxonInterface;
 use Sylius\Component\Core\Model\TaxRateInterface;
 use Sylius\Component\Customer\Model\CustomerGroupInterface;
 use Sylius\Component\Order\Modifier\OrderItemQuantityModifierInterface;
@@ -136,7 +138,7 @@ final class TestCatalog
 
     public function rule(
         ChannelInterface $channel,
-        ProductInterface|ProductVariantInterface $target,
+        ProductInterface|ProductVariantInterface|TaxonInterface $target,
         int $minQuantity,
         string $type,
         int $value,
@@ -145,13 +147,17 @@ final class TestCatalog
         ?\DateTimeInterface $startsAt = null,
         ?\DateTimeInterface $endsAt = null,
         bool $enabled = true,
+        string $cumulation = TierPriceRuleInterface::CUMULATION_BEST_OF,
     ): TierPriceRuleInterface {
         /** @var FactoryInterface<TierPriceRuleInterface> $factory */
         $factory = $this->container->get('tmonier_tier_pricing.factory.tier_price_rule');
         $rule = $factory->createNew();
         $rule->setChannel($channel);
         $rule->setCustomerGroup($customerGroup);
-        if ($target instanceof ProductVariantInterface) {
+        if ($target instanceof TaxonInterface) {
+            $rule->setScope(TierPriceRuleInterface::SCOPE_TAXON);
+            $rule->setTaxon($target);
+        } elseif ($target instanceof ProductVariantInterface) {
             $rule->setScope(TierPriceRuleInterface::SCOPE_VARIANT);
             $rule->setVariant($target);
         } else {
@@ -165,10 +171,50 @@ final class TestCatalog
         $rule->setStartsAt($startsAt);
         $rule->setEndsAt($endsAt);
         $rule->setEnabled($enabled);
+        $rule->setCumulation($cumulation);
         $this->entityManager()->persist($rule);
         $this->entityManager()->flush();
 
         return $rule;
+    }
+
+    /** A taxon of a new tree (root) or a child of `$parent`. */
+    public function taxon(?TaxonInterface $parent = null): TaxonInterface
+    {
+        /** @var FactoryInterface<TaxonInterface> $factory */
+        $factory = $this->container->get('sylius.factory.taxon');
+        $taxon = $factory->createNew();
+        $code = 'tmonier_taxon_' . bin2hex(random_bytes(4));
+        $taxon->setCode($code);
+        $taxon->setCurrentLocale('en_US');
+        $taxon->setFallbackLocale('en_US');
+        $taxon->setName('Taxon ' . $code);
+        $taxon->setSlug($code);
+        if (null !== $parent) {
+            $parent->addChild($taxon);
+        }
+        $this->entityManager()->persist($taxon);
+        $this->entityManager()->flush();
+
+        return $taxon;
+    }
+
+    /** Classifies the product in the taxons (the first one as main taxon when `$main`). */
+    public function classify(ProductInterface $product, bool $main, TaxonInterface ...$taxons): void
+    {
+        /** @var FactoryInterface<ProductTaxonInterface> $factory */
+        $factory = $this->container->get('sylius.factory.product_taxon');
+        foreach ($taxons as $index => $taxon) {
+            $productTaxon = $factory->createNew();
+            $productTaxon->setProduct($product);
+            $productTaxon->setTaxon($taxon);
+            $productTaxon->setPosition($index);
+            $product->addProductTaxon($productTaxon);
+            if ($main && 0 === $index) {
+                $product->setMainTaxon($taxon);
+            }
+        }
+        $this->entityManager()->flush();
     }
 
     public function customerGroup(): CustomerGroupInterface

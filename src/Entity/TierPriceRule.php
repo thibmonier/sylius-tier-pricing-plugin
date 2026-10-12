@@ -7,6 +7,7 @@ namespace Tmonier\SyliusTierPricingPlugin\Entity;
 use Sylius\Component\Core\Model\ChannelInterface;
 use Sylius\Component\Core\Model\ProductInterface;
 use Sylius\Component\Core\Model\ProductVariantInterface;
+use Sylius\Component\Core\Model\TaxonInterface;
 use Sylius\Component\Customer\Model\CustomerGroupInterface;
 use Sylius\Resource\Model\TimestampableTrait;
 use Sylius\Resource\Model\ToggleableTrait;
@@ -27,6 +28,10 @@ class TierPriceRule implements TierPriceRuleInterface
     protected ?ProductInterface $product = null;
 
     protected ?ProductVariantInterface $variant = null;
+
+    protected ?TaxonInterface $taxon = null;
+
+    protected string $cumulation = self::CUMULATION_BEST_OF;
 
     protected string $quantityBasis = self::BASIS_LINE;
 
@@ -100,8 +105,31 @@ class TierPriceRule implements TierPriceRuleInterface
         $this->variant = $variant;
     }
 
+    public function getTaxon(): ?TaxonInterface
+    {
+        return $this->taxon;
+    }
+
+    public function setTaxon(?TaxonInterface $taxon): void
+    {
+        $this->taxon = $taxon;
+    }
+
+    public function getCumulation(): string
+    {
+        return $this->cumulation;
+    }
+
+    public function setCumulation(string $cumulation): void
+    {
+        $this->cumulation = $cumulation;
+    }
+
     public function getTargetProduct(): ?ProductInterface
     {
+        if (self::SCOPE_TAXON === $this->scope) {
+            return null;
+        }
         if (self::SCOPE_VARIANT === $this->scope) {
             $product = $this->variant?->getProduct();
 

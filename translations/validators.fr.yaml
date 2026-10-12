@@ -1,10 +1,11 @@
 tmonier_tier_pricing:
     tier_price_rule:
-        target_missing: 'Choisissez le produit ou la déclinaison de la règle.'
-        target_mismatch: 'Uniquement le produit ou la déclinaison, selon « S’applique à ».'
+        target_missing: 'Choisissez le produit, la déclinaison ou le taxon de la règle.'
+        target_mismatch: 'Uniquement le produit, la déclinaison ou le taxon, selon « S’applique à ».'
         percentage_range: 'Le pourcentage doit être compris entre 0,01 et 100.'
         amount_range: 'Saisissez un prix unitaire compris entre 0 et %max%.'
         dates_order: 'La fin doit être postérieure au début.'
         duplicate: 'Une règle dès %quantity% pièces existe déjà pour ce produit, ce canal et ce groupe de clients sur cette période.'
         channel_required: 'Choisissez un canal.'
         min_quantity_range: 'La quantité doit être comprise entre {{ min }} et {{ max }}.'
+        taxon_basis: 'Seule une règle de taxon peut compter tous les produits de son taxon.'

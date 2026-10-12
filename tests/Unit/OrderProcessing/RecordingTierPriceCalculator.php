@@ -23,7 +23,7 @@ final class RecordingTierPriceCalculator implements TierPriceCalculatorInterface
     {
     }
 
-    public function quote(ProductVariantInterface $variant, ChannelInterface $channel, ?CustomerGroupInterface $customerGroup, int $lineQuantity, int $productQuantity, ?int $currentPrice = null): ?TierPriceQuote
+    public function quote(ProductVariantInterface $variant, ChannelInterface $channel, ?CustomerGroupInterface $customerGroup, int $lineQuantity, int $productQuantity, ?int $currentPrice = null, ?array $taxonQuantities = null): ?TierPriceQuote
     {
         $this->calls[] = [$lineQuantity, $productQuantity, $currentPrice];
         if ($productQuantity < $this->minQuantity) {
@@ -33,7 +33,7 @@ final class RecordingTierPriceCalculator implements TierPriceCalculatorInterface
         return new TierPriceQuote(new TierPriceRuleData(1, null, null, TierPriceRuleInterface::BASIS_PRODUCT, $this->minQuantity, TierPriceRuleInterface::TYPE_FIXED_UNIT_PRICE, $this->price), $this->price, (int) $currentPrice, (int) $currentPrice);
     }
 
-    public function table(ProductVariantInterface $variant, ChannelInterface $channel, ?CustomerGroupInterface $customerGroup, int $lineQuantity = 0, int $productQuantity = 0): TierPriceTable
+    public function table(ProductVariantInterface $variant, ChannelInterface $channel, ?CustomerGroupInterface $customerGroup, int $lineQuantity = 0, int $productQuantity = 0, ?array $taxonQuantities = null): TierPriceTable
     {
         return new TierPriceTable([]);
     }

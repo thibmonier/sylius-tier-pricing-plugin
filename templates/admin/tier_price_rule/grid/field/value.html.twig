@@ -1,1 +1,2 @@
 {% include '@TmonierSyliusTierPricingPlugin/shared/rule_value.html.twig' with { rule: data } only %}
+{% if data.cumulation != 'best_of' %}<div class="text-secondary small" {{ sylius_test_html_attribute('tmonier-tier-rule-cumulation') }}>{{ ('tmonier_tier_pricing.cumulation.' ~ data.cumulation)|trans }}</div>{% endif %}

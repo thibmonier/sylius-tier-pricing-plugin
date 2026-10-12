@@ -1,10 +1,11 @@
 tmonier_tier_pricing:
     tier_price_rule:
-        target_missing: 'Wählen Sie das Produkt oder die Variante der Regel.'
-        target_mismatch: 'Nur das Produkt oder die Variante, wie unter „Gilt für“ gewählt.'
+        target_missing: 'Wählen Sie das Produkt, die Variante oder das Taxon der Regel.'
+        target_mismatch: 'Nur das Produkt, die Variante oder das Taxon, wie unter „Gilt für“ gewählt.'
         percentage_range: 'Der Prozentsatz muss zwischen 0,01 und 100 liegen.'
         amount_range: 'Geben Sie einen Stückpreis zwischen 0 und %max% ein.'
         dates_order: 'Das Ende muss nach dem Beginn liegen.'
         duplicate: 'Für dieses Produkt, diesen Kanal und diese Kundengruppe gibt es in diesem Zeitraum bereits eine Regel ab %quantity% Stück.'
         channel_required: 'Wählen Sie einen Kanal.'
         min_quantity_range: 'Die Menge muss zwischen {{ min }} und {{ max }} liegen.'
+        taxon_basis: 'Nur eine Taxon-Regel kann alle Produkte ihres Taxons zählen.'

@@ -27,6 +27,8 @@ final class ValidTierPriceRule extends Constraint
 
     public string $duplicate = 'tmonier_tier_pricing.tier_price_rule.duplicate';
 
+    public string $taxonBasis = 'tmonier_tier_pricing.tier_price_rule.taxon_basis';
+
     public function getTargets(): string
     {
         return self::CLASS_CONSTRAINT;

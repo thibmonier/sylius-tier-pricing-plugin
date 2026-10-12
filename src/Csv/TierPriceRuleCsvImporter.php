@@ -8,6 +8,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Sylius\Component\Core\Model\ChannelInterface;
 use Sylius\Component\Core\Model\ProductInterface;
 use Sylius\Component\Core\Model\ProductVariantInterface;
+use Sylius\Component\Core\Model\TaxonInterface;
 use Sylius\Component\Customer\Model\CustomerGroupInterface;
 use Symfony\Component\Validator\ConstraintViolationInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -59,7 +60,8 @@ final class TierPriceRuleCsvImporter
         if (is_array($header) && isset($header[0])) {
             $header[0] = preg_replace('/^\xEF\xBB\xBF/', '', $header[0]);
         }
-        if (!is_array($header) || array_map(static fn (?string $cell): string => strtolower(trim((string) $cell)), $header) !== TierPriceRuleCsvFormat::HEADER) {
+        $columns = is_array($header) ? array_map(static fn (?string $cell): string => strtolower(trim((string) $cell)), $header) : [];
+        if (TierPriceRuleCsvFormat::HEADER !== $columns && TierPriceRuleCsvFormat::HEADER_1_0 !== $columns) {
             $result->errors[] = sprintf('line 1: the header must be "%s"', implode(',', TierPriceRuleCsvFormat::HEADER));
 
             return $result;
@@ -80,7 +82,7 @@ final class TierPriceRuleCsvImporter
                 if ([null] === $row || [] === array_filter($row, static fn (?string $cell): bool => '' !== trim((string) $cell))) {
                     continue;
                 }
-                $error = $this->importRow($row, $result, $channelCode, $line);
+                $error = $this->importRow($row, $result, $channelCode, $line, $columns);
                 if (null !== $error) {
                     $result->errors[] = sprintf('line %d: %s', $line, $error);
 
@@ -112,14 +114,17 @@ final class TierPriceRuleCsvImporter
         return $result;
     }
 
-    /** @param list<string|null> $row */
-    private function importRow(array $row, TierPriceRuleImportResult $result, ?string $onlyChannel, int $line): ?string
+    /**
+     * @param list<string|null> $row
+     * @param list<string> $columns header of the file (1.0 or 1.1)
+     */
+    private function importRow(array $row, TierPriceRuleImportResult $result, ?string $onlyChannel, int $line, array $columns): ?string
     {
-        if (count($row) !== count(TierPriceRuleCsvFormat::HEADER)) {
-            return sprintf('%d columns expected, %d found', count(TierPriceRuleCsvFormat::HEADER), count($row));
+        if (count($row) !== count($columns)) {
+            return sprintf('%d columns expected, %d found', count($columns), count($row));
         }
-        /** @var array{channel: string, customer_group: string, scope: string, product: string, variant: string, quantity_basis: string, min_quantity: string, type: string, value: string, enabled: string, starts_at: string, ends_at: string} $data */
-        $data = array_combine(TierPriceRuleCsvFormat::HEADER, array_map(static fn (?string $cell): string => trim((string) $cell), $row));
+        /** @var array{channel: string, customer_group: string, scope: string, product: string, variant: string, quantity_basis: string, min_quantity: string, type: string, value: string, enabled: string, starts_at: string, ends_at: string, taxon: string, cumulation: string} $data */
+        $data = array_combine($columns, array_map(static fn (?string $cell): string => trim((string) $cell), $row)) + ['taxon' => '', 'cumulation' => ''];
 
         if (null !== $onlyChannel && $data['channel'] !== $onlyChannel) {
             return sprintf('channel "%s" outside of the imported channel "%s"', $data['channel'], $onlyChannel);
@@ -137,7 +142,13 @@ final class TierPriceRuleCsvImporter
         }
         $product = null;
         $variant = null;
-        if (TierPriceRuleInterface::SCOPE_VARIANT === $data['scope']) {
+        $taxon = null;
+        if (TierPriceRuleInterface::SCOPE_TAXON === $data['scope']) {
+            $taxon = $this->reference(TaxonInterface::class, $data['taxon']);
+            if (null === $taxon) {
+                return sprintf('unknown taxon "%s"', $data['taxon']);
+            }
+        } elseif (TierPriceRuleInterface::SCOPE_VARIANT === $data['scope']) {
             $variant = $this->reference(ProductVariantInterface::class, $data['variant']);
             if (null === $variant) {
                 return sprintf('unknown variant "%s"', $data['variant']);
@@ -148,7 +159,7 @@ final class TierPriceRuleCsvImporter
                 return sprintf('unknown product "%s"', $data['product']);
             }
         } else {
-            return sprintf('unknown scope "%s" (variant or product)', $data['scope']);
+            return sprintf('unknown scope "%s" (variant, product or taxon)', $data['scope']);
         }
         if (1 !== preg_match('/^\d+$/', $data['min_quantity'])) {
             return sprintf('invalid min_quantity "%s"', $data['min_quantity']);
@@ -172,7 +183,9 @@ final class TierPriceRuleCsvImporter
             return 'invalid date';
         }
 
-        $rule = $this->findExisting($channel, $customerGroup, $data['scope'], $product, $variant, (int) $data['min_quantity'], $startsAt, $endsAt);
+        $cumulation = '' === $data['cumulation'] ? TierPriceRuleInterface::CUMULATION_BEST_OF : $data['cumulation'];
+
+        $rule = $this->findExisting($channel, $customerGroup, $data['scope'], $product, $variant, $taxon, (int) $data['min_quantity'], $startsAt, $endsAt);
         $isNew = null === $rule;
         if (null !== $rule && isset($this->linesByRule[(int) $rule->getId()])) {
             return sprintf('duplicate of line %d', $this->linesByRule[(int) $rule->getId()]);
@@ -183,6 +196,8 @@ final class TierPriceRuleCsvImporter
         $rule->setScope($data['scope']);
         $rule->setProduct($product);
         $rule->setVariant($variant);
+        $rule->setTaxon($taxon);
+        $rule->setCumulation($cumulation);
         $rule->setQuantityBasis('' === $data['quantity_basis'] ? TierPriceRuleInterface::BASIS_LINE : $data['quantity_basis']);
         $rule->setMinQuantity((int) $data['min_quantity']);
         $rule->setType($data['type']);
@@ -214,7 +229,7 @@ final class TierPriceRuleCsvImporter
         return null;
     }
 
-    private function findExisting(ChannelInterface $channel, ?CustomerGroupInterface $customerGroup, string $scope, ?ProductInterface $product, ?ProductVariantInterface $variant, int $minQuantity, ?\DateTimeInterface $startsAt, ?\DateTimeInterface $endsAt): ?TierPriceRuleInterface
+    private function findExisting(ChannelInterface $channel, ?CustomerGroupInterface $customerGroup, string $scope, ?ProductInterface $product, ?ProductVariantInterface $variant, ?TaxonInterface $taxon, int $minQuantity, ?\DateTimeInterface $startsAt, ?\DateTimeInterface $endsAt): ?TierPriceRuleInterface
     {
         $queryBuilder = $this->entityManager->createQueryBuilder()
             ->select('o')
@@ -227,7 +242,7 @@ final class TierPriceRuleCsvImporter
             ->setParameter('minQuantity', $minQuantity)
             ->setMaxResults(1)
         ;
-        foreach (['customerGroup' => $customerGroup, 'product' => $product, 'variant' => $variant, 'startsAt' => $startsAt, 'endsAt' => $endsAt] as $field => $value) {
+        foreach (['customerGroup' => $customerGroup, 'product' => $product, 'variant' => $variant, 'taxon' => $taxon, 'startsAt' => $startsAt, 'endsAt' => $endsAt] as $field => $value) {
             if (null === $value) {
                 $queryBuilder->andWhere(sprintf('o.%s IS NULL', $field));
             } else {
