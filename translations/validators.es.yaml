@@ -3,7 +3,7 @@ tmonier_tier_pricing:
         target_missing: 'Elija el producto o la variante de la regla.'
         target_mismatch: 'Solo el producto o la variante, según «Se aplica a».'
         percentage_range: 'El porcentaje debe estar entre 0,01 y 100.'
-        amount_positive: 'Introduzca un precio unitario de 0 o más.'
+        amount_range: 'Introduzca un precio unitario entre 0 y %max%.'
         dates_order: 'El fin debe ser posterior al inicio.'
         duplicate: 'Ya existe una regla desde %quantity% unidades para este producto, canal y grupo de clientes en este periodo.'
         channel_required: 'Elija un canal.'

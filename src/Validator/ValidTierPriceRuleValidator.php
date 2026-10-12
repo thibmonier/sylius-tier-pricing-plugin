@@ -46,8 +46,12 @@ final class ValidTierPriceRuleValidator extends ConstraintValidator
         if (TierPriceRuleInterface::TYPE_PERCENTAGE_OFF === $value->getType() && ($value->getValue() <= 0 || $value->getValue() > 10000)) {
             $this->context->buildViolation($constraint->percentageRange)->atPath('value')->addViolation();
         }
-        if (TierPriceRuleInterface::TYPE_FIXED_UNIT_PRICE === $value->getType() && $value->getValue() < 0) {
-            $this->context->buildViolation($constraint->amountPositive)->atPath('value')->addViolation();
+        if (TierPriceRuleInterface::TYPE_FIXED_UNIT_PRICE === $value->getType() && ($value->getValue() < 0 || $value->getValue() > TierPriceRuleInterface::MAX_AMOUNT)) {
+            $this->context->buildViolation($constraint->amountRange)
+                ->setParameter('%max%', number_format(TierPriceRuleInterface::MAX_AMOUNT / 100, 2, '.', ''))
+                ->atPath('value')
+                ->addViolation()
+            ;
         }
         if (null !== $value->getStartsAt() && null !== $value->getEndsAt() && $value->getEndsAt() <= $value->getStartsAt()) {
             $this->context->buildViolation($constraint->datesOrder)->atPath('endsAt')->addViolation();

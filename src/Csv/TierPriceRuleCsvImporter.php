@@ -37,6 +37,9 @@ final class TierPriceRuleCsvImporter
     /** @var array<string, array<string, int|null>> class => code => id */
     private array $ids = [];
 
+    /** @var array<int, int> rule id => line that created or updated it in this import */
+    private array $linesByRule = [];
+
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly TierPriceRuleFactoryInterface $factory,
@@ -50,7 +53,12 @@ final class TierPriceRuleCsvImporter
     {
         $result = new TierPriceRuleImportResult();
         $this->ids = [];
+        $this->linesByRule = [];
         $header = fgetcsv($stream, escape: '');
+        // Excel saves "CSV UTF-8" with a byte order mark.
+        if (is_array($header) && isset($header[0])) {
+            $header[0] = preg_replace('/^\xEF\xBB\xBF/', '', $header[0]);
+        }
         if (!is_array($header) || array_map(static fn (?string $cell): string => strtolower(trim((string) $cell)), $header) !== TierPriceRuleCsvFormat::HEADER) {
             $result->errors[] = sprintf('line 1: the header must be "%s"', implode(',', TierPriceRuleCsvFormat::HEADER));
 
@@ -72,7 +80,7 @@ final class TierPriceRuleCsvImporter
                 if ([null] === $row || [] === array_filter($row, static fn (?string $cell): bool => '' !== trim((string) $cell))) {
                     continue;
                 }
-                $error = $this->importRow($row, $result, $channelCode);
+                $error = $this->importRow($row, $result, $channelCode, $line);
                 if (null !== $error) {
                     $result->errors[] = sprintf('line %d: %s', $line, $error);
 
@@ -105,7 +113,7 @@ final class TierPriceRuleCsvImporter
     }
 
     /** @param list<string|null> $row */
-    private function importRow(array $row, TierPriceRuleImportResult $result, ?string $onlyChannel): ?string
+    private function importRow(array $row, TierPriceRuleImportResult $result, ?string $onlyChannel, int $line): ?string
     {
         if (count($row) !== count(TierPriceRuleCsvFormat::HEADER)) {
             return sprintf('%d columns expected, %d found', count(TierPriceRuleCsvFormat::HEADER), count($row));
@@ -150,15 +158,25 @@ final class TierPriceRuleCsvImporter
             return sprintf('invalid value "%s"', $data['value']);
         }
 
+        $enabled = strtolower($data['enabled']);
+        if (!in_array($enabled, ['', '1', 'true', 'yes', '0', 'false', 'no'], true)) {
+            return sprintf('invalid enabled "%s" (1, true, yes, 0, false, no or empty)', $data['enabled']);
+        }
+
         try {
-            $startsAt = '' === $data['starts_at'] ? null : new \DateTime($data['starts_at']);
-            $endsAt = '' === $data['ends_at'] ? null : new \DateTime($data['ends_at']);
+            // Offsets kept: converted to the application timezone of the datetime columns.
+            $timezone = new \DateTimeZone(date_default_timezone_get());
+            $startsAt = '' === $data['starts_at'] ? null : (new \DateTime($data['starts_at']))->setTimezone($timezone);
+            $endsAt = '' === $data['ends_at'] ? null : (new \DateTime($data['ends_at']))->setTimezone($timezone);
         } catch (\Exception) {
             return 'invalid date';
         }
 
         $rule = $this->findExisting($channel, $customerGroup, $data['scope'], $product, $variant, (int) $data['min_quantity'], $startsAt, $endsAt);
         $isNew = null === $rule;
+        if (null !== $rule && isset($this->linesByRule[(int) $rule->getId()])) {
+            return sprintf('duplicate of line %d', $this->linesByRule[(int) $rule->getId()]);
+        }
         $rule ??= $this->factory->createNew();
         $rule->setChannel($channel);
         $rule->setCustomerGroup($customerGroup);
@@ -169,7 +187,7 @@ final class TierPriceRuleCsvImporter
         $rule->setMinQuantity((int) $data['min_quantity']);
         $rule->setType($data['type']);
         $rule->setValue($value);
-        $rule->setEnabled(!in_array(strtolower($data['enabled']), ['0', 'false', 'no'], true));
+        $rule->setEnabled(!in_array($enabled, ['0', 'false', 'no'], true));
         $rule->setStartsAt($startsAt);
         $rule->setEndsAt($endsAt);
 
@@ -190,6 +208,7 @@ final class TierPriceRuleCsvImporter
         // Flushed line by line: the next lines are validated against this one (uniqueness).
         $this->entityManager->persist($rule);
         $this->entityManager->flush();
+        $this->linesByRule[(int) $rule->getId()] = $line;
         $isNew ? ++$result->created : ++$result->updated;
 
         return null;

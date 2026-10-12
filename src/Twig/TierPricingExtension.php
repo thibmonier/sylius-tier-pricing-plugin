@@ -14,7 +14,9 @@ use Sylius\Component\Core\Model\ProductVariantInterface;
 use Sylius\Component\Customer\Context\CustomerContextInterface;
 use Sylius\Component\Order\Context\CartContextInterface;
 use Sylius\Component\Order\Context\CartNotFoundException;
+use Tmonier\SyliusTierPricingPlugin\OrderProcessing\TierPriceExemptionCheckerInterface;
 use Tmonier\SyliusTierPricingPlugin\OrderProcessing\TierPriceOrderProcessor;
+use Tmonier\SyliusTierPricingPlugin\Pricing\OrderCustomerGroupResolver;
 use Tmonier\SyliusTierPricingPlugin\Pricing\PriceDisplayResolverInterface;
 use Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceCalculatorInterface;
 use Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceTable;
@@ -31,6 +33,8 @@ final class TierPricingExtension extends AbstractExtension
         private readonly CustomerContextInterface $customerContext,
         private readonly CartContextInterface $cartContext,
         private readonly TierPriceRuleRepositoryInterface $ruleRepository,
+        private readonly TierPriceExemptionCheckerInterface $exemptionChecker,
+        private readonly OrderCustomerGroupResolver $customerGroupResolver,
         private readonly bool $productPage,
         private readonly bool $cart,
     ) {
@@ -41,7 +45,7 @@ final class TierPricingExtension extends AbstractExtension
         return [
             new TwigFunction('tmonier_tier_pricing_table', $this->table(...)),
             new TwigFunction('tmonier_tier_pricing_cart_table', $this->cartTable(...)),
-            new TwigFunction('tmonier_tier_pricing_display_amount', $this->displayAmount(...)),
+            new TwigFunction('tmonier_tier_pricing_tax_convention', $this->taxConvention(...)),
             new TwigFunction('tmonier_tier_pricing_is_b2b', $this->isBusinessChannel(...)),
             new TwigFunction('tmonier_tier_pricing_shows_percentage', $this->showsPercentage(...)),
             new TwigFunction('tmonier_tier_pricing_item_tier', $this->itemTier(...)),
@@ -74,7 +78,8 @@ final class TierPricingExtension extends AbstractExtension
     {
         $order = $item->getOrder();
         $variant = $item->getVariant();
-        if (!$this->cart || !$order instanceof OrderInterface || null === $variant || $item->isImmutable()) {
+        // Same lines as the order processor: immutable and exempt lines get no tier price.
+        if (!$this->cart || !$order instanceof OrderInterface || null === $variant || $item->isImmutable() || $this->exemptionChecker->isExempt($item)) {
             return null;
         }
         $channel = $order->getChannel();
@@ -83,16 +88,17 @@ final class TierPricingExtension extends AbstractExtension
         }
 
         [$lineQuantity, $productQuantity] = $this->orderQuantities($order, $variant);
-        $table = $this->calculator->table($variant, $channel, $order->getCustomer()?->getGroup(), $lineQuantity, $productQuantity);
+        $table = $this->calculator->table($variant, $channel, $this->customerGroupResolver->resolve($order), $lineQuantity, $productQuantity);
 
         return $table->hasTiers() ? $table : null;
     }
 
-    public function displayAmount(ProductVariantInterface $variant, int $amount): int
+    /** `included`, `excluded` or null (unknown: no label), for the variant in the current channel. */
+    public function taxConvention(ProductVariantInterface $variant): ?string
     {
         $channel = $this->channel();
 
-        return null === $channel ? $amount : $this->displayResolver->displayAmount($variant, $channel, $amount);
+        return null === $channel ? null : $this->displayResolver->taxConvention($variant, $channel);
     }
 
     public function isBusinessChannel(): bool
@@ -147,13 +153,13 @@ final class TierPricingExtension extends AbstractExtension
         return $cart instanceof OrderInterface ? $this->orderQuantities($cart, $variant) : [0, 0];
     }
 
-    /** @return array{int, int} quantity of the variant, of the product (mutable lines only, as the order processor counts) */
+    /** @return array{int, int} quantity of the variant, of the product (mutable, non-exempt lines only, as the order processor counts) */
     private function orderQuantities(OrderInterface $order, ProductVariantInterface $variant): array
     {
         $lineQuantity = 0;
         $productQuantity = 0;
         foreach ($order->getItems() as $item) {
-            if ($item->isImmutable()) {
+            if ($item->isImmutable() || $this->exemptionChecker->isExempt($item)) {
                 continue;
             }
             if ($item->getVariant() === $variant) {

@@ -6,8 +6,8 @@ namespace Tmonier\SyliusTierPricingPlugin\Api;
 
 /**
  * Shop API read model: price breaks of a variant for the current channel and customer, amounts
- * in the channel base currency (cents), with taxes in consumer channels, without taxes in the
- * `b2b_channels`.
+ * as stored in the channel base currency (cents), like the variant price; `taxIncluded` tells
+ * the convention of the variant tax rate in the channel default zone (null when unknown).
  */
 final class TierPriceTableView
 {
@@ -17,7 +17,7 @@ final class TierPriceTableView
     public function __construct(
         public readonly string $code,
         public readonly string $currencyCode,
-        public readonly bool $taxIncluded,
+        public readonly ?bool $taxIncluded,
         public readonly array $tiers,
     ) {
     }

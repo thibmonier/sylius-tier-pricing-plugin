@@ -21,10 +21,13 @@
         </div>
     {% endif %}
     {% if table is not null and table.nudge is not null %}
+        {# Same tax convention as the unit price of the cell (as stored), labelled when known. #}
+        {% set tax_convention = tmonier_tier_pricing_tax_convention(item.variant) %}
+        {% set tax_suffix = tax_convention is null ? '' : ' ' ~ ((tax_convention == 'included' ? 'tmonier_tier_pricing.ui.incl_tax' : 'tmonier_tier_pricing.ui.excl_tax')|trans) %}
         <div class="small text-info" {{ sylius_test_html_attribute('tmonier-tier-nudge') }}>
             {{ 'tmonier_tier_pricing.ui.nudge'|trans({
                 '%quantity%': table.nudge.quantityToAdd,
-                '%price%': money.convertAndFormat(tmonier_tier_pricing_display_amount(item.variant, table.nudge.unitPrice)) ~ ' ' ~ ((tmonier_tier_pricing_is_b2b() ? 'tmonier_tier_pricing.ui.excl_tax' : 'tmonier_tier_pricing.ui.incl_tax')|trans),
+                '%price%': money.convertAndFormat(table.nudge.unitPrice) ~ tax_suffix,
             }) }}
         </div>
     {% endif %}

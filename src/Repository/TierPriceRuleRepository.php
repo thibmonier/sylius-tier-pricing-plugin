@@ -106,12 +106,16 @@ class TierPriceRuleRepository extends EntityRepository implements TierPriceRuleR
 
     public function createListQueryBuilder(): QueryBuilder
     {
+        // Every to-one association the grid row shows is in the list query. Translations are
+        // to-many (they would break the pagination): one query per distinct product name.
         return $this->createQueryBuilder('o')
-            ->addSelect('channel', 'customerGroup', 'product', 'variant')
+            ->addSelect('channel', 'baseCurrency', 'customerGroup', 'product', 'variant', 'variantProduct')
             ->innerJoin('o.channel', 'channel')
+            ->leftJoin('channel.baseCurrency', 'baseCurrency')
             ->leftJoin('o.customerGroup', 'customerGroup')
             ->leftJoin('o.product', 'product')
             ->leftJoin('o.variant', 'variant')
+            ->leftJoin('variant.product', 'variantProduct')
         ;
     }
 }

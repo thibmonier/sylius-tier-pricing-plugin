@@ -12,6 +12,8 @@ use Sylius\Component\Order\Model\OrderInterface as BaseOrderInterface;
 use Sylius\Component\Order\Processor\OrderProcessorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Tmonier\SyliusTierPricingPlugin\Entity\TierPriceRuleInterface;
+use Tmonier\SyliusTierPricingPlugin\Pricing\OrderCustomerGroupResolver;
+use Tmonier\SyliusTierPricingPlugin\Pricing\PriceDisplayResolverInterface;
 use Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceCalculatorInterface;
 
 /**
@@ -21,8 +23,9 @@ use Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceCalculatorInterface;
  *
  * Immutable items (e.g. locked quote lines) are left untouched. The channel pricings are never
  * written (the price history used for the Omnibus lowest price stays the catalog one): only the
- * unit price of the cart line changes, and a neutral `tmonier_tier_price` adjustment (no effect
- * on totals) records the rule applied.
+ * unit price of the cart line changes (and, in consumer channels, its original unit price, so that
+ * no reduction from the regular price is implied), and a neutral `tmonier_tier_price` adjustment
+ * (no effect on totals) records the rule applied with the price without tier.
  */
 final class TierPriceOrderProcessor implements OrderProcessorInterface
 {
@@ -34,6 +37,8 @@ final class TierPriceOrderProcessor implements OrderProcessorInterface
         private readonly TierPriceExemptionCheckerInterface $exemptionChecker,
         private readonly AdjustmentFactoryInterface $adjustmentFactory,
         private readonly TranslatorInterface $translator,
+        private readonly OrderCustomerGroupResolver $customerGroupResolver = new OrderCustomerGroupResolver(),
+        private readonly ?PriceDisplayResolverInterface $displayResolver = null,
     ) {
     }
 
@@ -67,7 +72,10 @@ final class TierPriceOrderProcessor implements OrderProcessorInterface
             $productQuantities[$productId] = ($productQuantities[$productId] ?? 0) + $item->getQuantity();
         }
 
-        $customerGroup = $order->getCustomer()?->getGroup();
+        $customerGroup = $this->customerGroupResolver->resolve($order);
+        // Consumer channels: the regular price is not exposed as the original price of a tier
+        // line (the shop API and headless fronts strike originalUnitPrice > unitPrice through).
+        $hideRegularPrice = !($this->displayResolver?->isBusinessChannel($channel) ?? false);
         foreach ($items as $item) {
             $variant = $item->getVariant();
             $productId = $variant?->getProduct()?->getId();
@@ -81,6 +89,9 @@ final class TierPriceOrderProcessor implements OrderProcessorInterface
             }
 
             $item->setUnitPrice($quote->unitPrice);
+            if ($hideRegularPrice) {
+                $item->setOriginalUnitPrice($quote->unitPrice);
+            }
             $item->addAdjustment($this->adjustmentFactory->createWithData(
                 self::ADJUSTMENT_TYPE,
                 $this->translator->trans('tmonier_tier_pricing.ui.adjustment_label', ['%quantity%' => $quote->rule->minQuantity], 'messages', $order->getLocaleCode()),

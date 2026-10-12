@@ -17,12 +17,12 @@ final class TmonierSyliusTierPricingExtension extends AbstractResourceExtension 
 
     public function load(array $configs, ContainerBuilder $container): void
     {
-        /** @var array{b2b_channels: list<string>, percentage_column: array{b2c: bool, b2b: bool}, product_page: bool, cart: bool, cache_ttl: int, driver: string, resources: array<string, mixed>} $config */
+        /** @var array{b2b_channels: list<string>, percentage_column: array{b2c: bool, b2b: bool}, product_page: bool, cart: bool, group_prices_for_guests: bool, cache_ttl: int, driver: string, resources: array<string, mixed>} $config */
         $config = $this->processConfiguration(new Configuration(), $configs);
 
         $this->registerResources('tmonier_tier_pricing', $config['driver'], $config['resources'], $container);
 
-        foreach (['b2b_channels', 'percentage_column', 'product_page', 'cart', 'cache_ttl'] as $key) {
+        foreach (['b2b_channels', 'percentage_column', 'product_page', 'cart', 'group_prices_for_guests', 'cache_ttl'] as $key) {
             $container->setParameter('tmonier_tier_pricing.' . $key, $config[$key]);
         }
 

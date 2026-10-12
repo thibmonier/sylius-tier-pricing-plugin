@@ -9,15 +9,19 @@ use Tmonier\SyliusTierPricingPlugin\Entity\TierPriceRuleInterface;
 /** Pure: no database, no clock, no container. */
 final class TierPriceResolver implements TierPriceResolverInterface
 {
-    public function resolve(array $rules, TierPriceContext $context): ?TierPriceRuleData
+    public function resolve(array $rules, TierPriceContext $context, int $basePrice, int $currentPrice, int $minimumPrice = 0): ?TierPriceRuleData
     {
         $best = null;
+        $bestPrice = null;
         foreach ($rules as $rule) {
             if (!$this->applies($rule, $context)) {
                 continue;
             }
-            if (null === $best || $this->rank($rule) > $this->rank($best)) {
+            $price = $this->calculateUnitPrice($rule, $basePrice, $currentPrice, $minimumPrice);
+            // Best price wins; specificity only breaks ties.
+            if (null === $best || $price < $bestPrice || ($price === $bestPrice && $this->rank($rule) > $this->rank($best))) {
                 $best = $rule;
+                $bestPrice = $price;
             }
         }
 
@@ -46,7 +50,7 @@ final class TierPriceResolver implements TierPriceResolverInterface
         return $quantity >= $rule->minQuantity && $rule->isActiveAt($context->now);
     }
 
-    /** @return array{int, int, int, int} compared element by element (lowest id wins a tie, stable across runs) */
+    /** @return array{int, int, int, int} compared element by element: variant, group, threshold, then the oldest rule (stable) */
     private function rank(TierPriceRuleData $rule): array
     {
         return [

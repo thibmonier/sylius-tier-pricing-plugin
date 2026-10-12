@@ -18,6 +18,7 @@ use Tmonier\SyliusTierPricingPlugin\OrderProcessing\CompositeTierPriceExemptionC
 use Tmonier\SyliusTierPricingPlugin\OrderProcessing\TierPriceExemptionCheckerInterface;
 use Tmonier\SyliusTierPricingPlugin\OrderProcessing\TierPriceOrderProcessor;
 use Tmonier\SyliusTierPricingPlugin\Pricing\CachedTierPriceRuleProvider;
+use Tmonier\SyliusTierPricingPlugin\Pricing\OrderCustomerGroupResolver;
 use Tmonier\SyliusTierPricingPlugin\Pricing\PriceDisplayResolver;
 use Tmonier\SyliusTierPricingPlugin\Pricing\PriceDisplayResolverInterface;
 use Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceCalculator;
@@ -62,10 +63,15 @@ return static function (ContainerConfigurator $container): void {
         ->set('tmonier_tier_pricing.price_display_resolver', PriceDisplayResolver::class)
         ->args([
             service('sylius.resolver.tax_rate'),
-            service('sylius.tax_calculator'),
             param('tmonier_tier_pricing.b2b_channels'),
             param('tmonier_tier_pricing.percentage_column'),
         ])
+        ->tag('kernel.reset', ['method' => 'reset'])
+    ;
+
+    $services
+        ->set('tmonier_tier_pricing.order_customer_group_resolver', OrderCustomerGroupResolver::class)
+        ->args([param('tmonier_tier_pricing.group_prices_for_guests')])
     ;
     $services->alias(PriceDisplayResolverInterface::class, 'tmonier_tier_pricing.price_display_resolver');
 
@@ -88,6 +94,8 @@ return static function (ContainerConfigurator $container): void {
             service('tmonier_tier_pricing.exemption_checker'),
             service('sylius.factory.adjustment'),
             service('translator'),
+            service('tmonier_tier_pricing.order_customer_group_resolver'),
+            service('tmonier_tier_pricing.price_display_resolver'),
         ])
         ->tag('sylius.order_processor', ['priority' => 44])
     ;
@@ -134,6 +142,8 @@ return static function (ContainerConfigurator $container): void {
             service('sylius.context.customer'),
             service('sylius.context.cart'),
             service('tmonier_tier_pricing.repository.tier_price_rule'),
+            service('tmonier_tier_pricing.exemption_checker'),
+            service('tmonier_tier_pricing.order_customer_group_resolver'),
             param('tmonier_tier_pricing.product_page'),
             param('tmonier_tier_pricing.cart'),
         ])

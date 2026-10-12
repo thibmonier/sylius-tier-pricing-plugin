@@ -8,17 +8,25 @@ use Sylius\Component\Core\Model\ChannelInterface;
 use Sylius\Component\Core\Model\ProductVariantInterface;
 
 /**
- * Sylius has no "prices with / without taxes" setting per channel: a channel price includes
- * the tax or not depending on the tax rate (`includedInPrice`) of the variant tax category in
- * the zone. Tier prices are shown with taxes in consumer channels and without taxes in the
- * channels listed in `b2b_channels`.
+ * Tier prices are shown as stored, in the same tax convention as the Sylius prices next to them
+ * (product price, cart unit price): Sylius has no "prices with / without taxes" setting per
+ * channel, a channel price includes the tax or not depending on the tax rate
+ * (`includedInPrice`) of the variant tax category in the zone. This resolver tells which one,
+ * for the label.
  */
 interface PriceDisplayResolverInterface
 {
+    public const TAX_INCLUDED = 'included';
+
+    public const TAX_EXCLUDED = 'excluded';
+
     public function isBusinessChannel(ChannelInterface $channel): bool;
 
     public function showsPercentage(ChannelInterface $channel): bool;
 
-    /** The amount (a channel price of the variant) with taxes (B2C channel) or without (B2B channel). */
-    public function displayAmount(ProductVariantInterface $variant, ChannelInterface $channel, int $amount): int;
+    /**
+     * TAX_INCLUDED or TAX_EXCLUDED from the rate of the variant in the channel default tax
+     * zone; null when unknown (no default tax zone, no rate): no label is shown then.
+     */
+    public function taxConvention(ProductVariantInterface $variant, ChannelInterface $channel): ?string;
 }

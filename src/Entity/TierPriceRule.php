@@ -158,7 +158,7 @@ class TierPriceRule implements TierPriceRuleInterface
 
     public function setStartsAt(?\DateTimeInterface $startsAt): void
     {
-        $this->startsAt = $startsAt;
+        $this->startsAt = self::inApplicationTimezone($startsAt);
     }
 
     public function getEndsAt(): ?\DateTimeInterface
@@ -168,6 +168,24 @@ class TierPriceRule implements TierPriceRuleInterface
 
     public function setEndsAt(?\DateTimeInterface $endsAt): void
     {
-        $this->endsAt = $endsAt;
+        $this->endsAt = self::inApplicationTimezone($endsAt);
+    }
+
+    /**
+     * The `datetime` columns store the wall time without offset and are read back in the PHP
+     * default timezone: a date given with another offset (CSV, API) is converted first, so that
+     * it keeps its instant.
+     */
+    private static function inApplicationTimezone(?\DateTimeInterface $date): ?\DateTimeInterface
+    {
+        if (null === $date) {
+            return null;
+        }
+        $timezone = date_default_timezone_get();
+        if ($date instanceof \DateTime && $date->getTimezone()->getName() === $timezone) {
+            return $date;
+        }
+
+        return \DateTime::createFromInterface($date)->setTimezone(new \DateTimeZone($timezone));
     }
 }

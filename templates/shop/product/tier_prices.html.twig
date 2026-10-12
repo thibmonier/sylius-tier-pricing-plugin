@@ -1,7 +1,8 @@
 {#
     Child of the add to cart form (AddToCartFormComponent): re-rendered when the variant changes.
     Tiers are conditional prices ("from N pieces"), not price reductions: no struck-through price,
-    and the "-x %" column only where enabled (off by default in consumer channels).
+    and the "-x %" column only where enabled (off by default in consumer channels). Amounts are
+    shown as stored, in the same tax convention as the Sylius price above, with its label.
 #}
 {% import '@SyliusShop/shared/macro/money.html.twig' as money %}
 
@@ -11,6 +12,7 @@
 
 {% if table is not null %}
     {% set shows_percentage = tmonier_tier_pricing_shows_percentage() %}
+    {% set tax_convention = tmonier_tier_pricing_tax_convention(variant) %}
     <div class="mb-4" {{ sylius_test_html_attribute('tmonier-tier-prices') }}>
         <div class="fw-semibold mb-2">{{ 'tmonier_tier_pricing.ui.volume_prices'|trans }}</div>
         <table class="table table-sm align-middle mb-1">
@@ -33,7 +35,7 @@
                             {% endif %}
                         </td>
                         <td class="text-end fw-semibold" {{ sylius_test_html_attribute('tmonier-tier-price') }}>
-                            {{ money.convertAndFormat(tmonier_tier_pricing_display_amount(variant, row.unitPrice)) }}
+                            {{ money.convertAndFormat(row.unitPrice) }}
                         </td>
                         {% if shows_percentage %}
                             <td class="text-end text-secondary">{% if not loop.first %}-{{ row.percentage }} %{% endif %}</td>
@@ -43,14 +45,16 @@
             </tbody>
         </table>
         <div class="small text-secondary">
-            {{ (tmonier_tier_pricing_is_b2b() ? 'tmonier_tier_pricing.ui.prices_excl_tax' : 'tmonier_tier_pricing.ui.prices_incl_tax')|trans }}
+            {% if tax_convention is not null %}
+                <span {{ sylius_test_html_attribute('tmonier-tier-tax-label') }}>{{ (tax_convention == 'included' ? 'tmonier_tier_pricing.ui.prices_incl_tax' : 'tmonier_tier_pricing.ui.prices_excl_tax')|trans }}</span>
+            {% endif %}
             {% if table.hasMixAndMatch %}<br>* {{ 'tmonier_tier_pricing.ui.mix_and_match'|trans }}{% endif %}
         </div>
         {% if table.nudge is not null %}
             <div class="alert alert-info py-2 mt-2 mb-0 small" {{ sylius_test_html_attribute('tmonier-tier-nudge') }}>
                 {{ 'tmonier_tier_pricing.ui.nudge'|trans({
                     '%quantity%': table.nudge.quantityToAdd,
-                    '%price%': money.convertAndFormat(tmonier_tier_pricing_display_amount(variant, table.nudge.unitPrice)),
+                    '%price%': money.convertAndFormat(table.nudge.unitPrice),
                 }) }}
             </div>
         {% endif %}

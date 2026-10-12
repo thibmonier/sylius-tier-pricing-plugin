@@ -43,6 +43,9 @@ interface TierPriceRuleInterface extends ResourceInterface, TimestampableInterfa
 
     public const MIN_QUANTITY = 2;
 
+    /** Highest fixed unit price, in minor units (10,000,000.00): the column is a 32-bit integer. */
+    public const MAX_AMOUNT = 1_000_000_000;
+
     public function getId(): ?int;
 
     public function getChannel(): ?ChannelInterface;

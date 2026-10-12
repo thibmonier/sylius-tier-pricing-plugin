@@ -21,7 +21,7 @@ final class ValidTierPriceRule extends Constraint
 
     public string $percentageRange = 'tmonier_tier_pricing.tier_price_rule.percentage_range';
 
-    public string $amountPositive = 'tmonier_tier_pricing.tier_price_rule.amount_positive';
+    public string $amountRange = 'tmonier_tier_pricing.tier_price_rule.amount_range';
 
     public string $datesOrder = 'tmonier_tier_pricing.tier_price_rule.dates_order';
 

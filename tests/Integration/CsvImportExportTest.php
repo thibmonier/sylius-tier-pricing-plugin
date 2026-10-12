@@ -75,9 +75,10 @@ final class CsvImportExportTest extends KernelTestCase
         $result = $this->importer()->import($this->stream($csv));
 
         self::assertFalse($result->committed);
-        self::assertCount(2, $result->errors);
+        self::assertCount(3, $result->errors);
         self::assertStringStartsWith('line 3: unknown product', $result->errors[0]);
-        self::assertStringStartsWith('line 5: invalid value', $result->errors[1]);
+        self::assertSame('line 4: duplicate of line 2', $result->errors[1]);
+        self::assertStringStartsWith('line 5: invalid value', $result->errors[2]);
         self::assertCount(0, $this->rulesOf($product));
     }
 
@@ -146,6 +147,68 @@ final class CsvImportExportTest extends KernelTestCase
         self::assertSame([], $result->errors);
         self::assertSame(0, $result->created);
         self::assertGreaterThanOrEqual(1, $result->updated);
+    }
+
+    public function testIdenticalLinesAreReportedAsDuplicates(): void
+    {
+        $channel = $this->catalog()->channel();
+        $product = $this->catalog()->product($channel);
+        $first = sprintf("%s,,product,%s,,line,10,percentage_off,5,1,,\n", $channel->getCode(), $product->getCode());
+        $copy = sprintf("%s,,product,%s,,line,10,percentage_off,30,1,,\n", $channel->getCode(), $product->getCode());
+
+        $result = $this->importer()->import($this->stream(self::HEADER . $first . $copy));
+
+        self::assertSame(['line 3: duplicate of line 2'], $result->errors);
+        self::assertFalse($result->committed);
+        self::assertCount(0, $this->rulesOf($product));
+    }
+
+    public function testABomIsIgnoredAndEnabledValuesAreStrict(): void
+    {
+        $channel = $this->catalog()->channel();
+        $product = $this->catalog()->product($channel);
+        $csv = "\xEF\xBB\xBF" . self::HEADER
+            . sprintf("%s,,product,%s,,line,10,percentage_off,5,off,,\n", $channel->getCode(), $product->getCode())
+            . sprintf("%s,,product,%s,,line,20,percentage_off,6,no,,\n", $channel->getCode(), $product->getCode());
+
+        $result = $this->importer()->import($this->stream($csv));
+
+        self::assertSame(['line 2: invalid enabled "off" (1, true, yes, 0, false, no or empty)'], $result->errors);
+    }
+
+    public function testDatesKeepTheirOffset(): void
+    {
+        $channel = $this->catalog()->channel();
+        $product = $this->catalog()->product($channel);
+        $csv = self::HEADER . sprintf("%s,,product,%s,,line,10,percentage_off,5,1,2030-01-01T00:00:00+05:00,2030-02-01T00:00:00-03:00\n", $channel->getCode(), $product->getCode());
+
+        self::assertSame([], $this->importer()->import($this->stream($csv))->errors);
+
+        $this->entityManager()->clear();
+        $rules = $this->rulesOf($product);
+        self::assertCount(1, $rules);
+        self::assertSame((new \DateTimeImmutable('2029-12-31T19:00:00+00:00'))->getTimestamp(), $rules[0]->getStartsAt()?->getTimestamp());
+        self::assertSame((new \DateTimeImmutable('2030-02-01T03:00:00+00:00'))->getTimestamp(), $rules[0]->getEndsAt()?->getTimestamp());
+
+        // Imported again (same instants, other offset): the same rule, updated.
+        $again = self::HEADER . sprintf("%s,,product,%s,,line,10,percentage_off,6,1,2029-12-31T19:00:00+00:00,2030-02-01T03:00:00+00:00\n", $channel->getCode(), $product->getCode());
+        $result = $this->importer()->import($this->stream($again));
+        self::assertSame([0, 1], [$result->created, $result->updated]);
+    }
+
+    public function testATooLargeAmountIsALineError(): void
+    {
+        $channel = $this->catalog()->channel();
+        $product = $this->catalog()->product($channel);
+        $csv = self::HEADER
+            . sprintf("%s,,product,%s,,line,10,fixed_unit_price,99999999.99,1,,\n", $channel->getCode(), $product->getCode())
+            . sprintf("%s,,product,%s,,line,20,fixed_unit_price,99999999999.99,1,,\n", $channel->getCode(), $product->getCode());
+
+        $result = $this->importer()->import($this->stream($csv));
+
+        self::assertCount(2, $result->errors);
+        self::assertStringStartsWith('line 2: value: Enter a unit price between 0 and 10000000.00.', $result->errors[0]);
+        self::assertStringStartsWith('line 3: invalid value', $result->errors[1]);
     }
 
     /** @param list<TierPriceRuleInterface> $rules */

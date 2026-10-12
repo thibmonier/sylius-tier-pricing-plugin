@@ -41,6 +41,44 @@ final class AdminTierPriceRuleTest extends WebTestCase
         self::assertStringContainsString('-7.5 %', $crawler->filter('[data-test-tmonier-tier-rule-value]')->text());
     }
 
+    public function testTheGridDoesNotRunAQueryPerRule(): void
+    {
+        $channel = $this->catalog()->channel();
+        $single = $this->catalog()->product($channel, [1000]);
+        $many = $this->catalog()->product($channel, [1000, 1000, 1000, 1000, 1000, 1000]);
+        $this->catalog()->rule($channel, $this->catalog()->variant($single), 10, TierPriceRuleInterface::TYPE_FIXED_UNIT_PRICE, 900);
+        for ($index = 0; $index < 6; ++$index) {
+            $this->catalog()->rule($channel, $this->catalog()->variant($many, $index), 10, TierPriceRuleInterface::TYPE_FIXED_UNIT_PRICE, 900);
+        }
+        // Nothing in the identity map: every lazy association would be a query.
+        $this->entityManager()->clear();
+        $this->loginAdmin();
+
+        $this->queryCount((string) $single->getCode(), 1); // warm-up: user, channels, locales
+        $one = $this->queryCount((string) $single->getCode(), 1);
+        $six = $this->queryCount((string) $many->getCode(), 6);
+
+        self::assertSame($one, $six);
+    }
+
+    private function queryCount(string $productCode, int $rows): int
+    {
+        // The SQL logger also holds the queries of the test setup (same kernel).
+        $holder = self::getContainer()->get('doctrine.debug_data_holder');
+        self::assertInstanceOf(\Symfony\Bridge\Doctrine\Middleware\Debug\DebugDataHolder::class, $holder);
+        $holder->reset();
+        $this->client->enableProfiler();
+        $crawler = $this->client->request('GET', sprintf('/admin/tier-price-rules/?criteria[search][value]=%s', $productCode));
+        self::assertResponseIsSuccessful();
+        self::assertCount($rows, $crawler->filter('[data-test-tmonier-tier-rule-target]'));
+        $profile = $this->client->getProfile();
+        self::assertInstanceOf(\Symfony\Component\HttpKernel\Profiler\Profile::class, $profile);
+        $collector = $profile->getCollector('db');
+        self::assertInstanceOf(\Doctrine\Bundle\DoctrineBundle\DataCollector\DoctrineDataCollector::class, $collector);
+
+        return $collector->getQueryCount();
+    }
+
     public function testTheMerchantCreatesAndEditsARule(): void
     {
         $channel = $this->catalog()->channel();

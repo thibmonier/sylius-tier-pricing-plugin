@@ -105,15 +105,15 @@ final class TierPriceCalculator implements TierPriceCalculatorInterface
     /** @param list<TierPriceRuleData> $rules */
     private function quoteFor(array $rules, TierPriceContext $context, ProductVariantInterface $variant, ChannelInterface $channel, ?int $currentPrice): ?TierPriceQuote
     {
-        $rule = $this->resolver->resolve($rules, $context);
-        if (null === $rule) {
-            return null;
-        }
         $prices = $this->catalogPrices($variant, $channel);
         if (null === $prices) {
             return null;
         }
         $currentPrice ??= $prices['current'];
+        $rule = $this->resolver->resolve($rules, $context, $prices['base'], $currentPrice, $prices['minimum']);
+        if (null === $rule) {
+            return null;
+        }
 
         return new TierPriceQuote($rule, $this->resolver->calculateUnitPrice($rule, $prices['base'], $currentPrice, $prices['minimum']), $prices['base'], $currentPrice);
     }

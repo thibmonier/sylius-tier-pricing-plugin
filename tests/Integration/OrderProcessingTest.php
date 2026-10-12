@@ -72,7 +72,7 @@ final class OrderProcessingTest extends KernelTestCase
         self::assertCount(0, $item->getAdjustments(TierPriceOrderProcessor::ADJUSTMENT_TYPE));
     }
 
-    public function testVariantRuleBeatsProductRuleAndGroupRuleBeatsGenericRule(): void
+    public function testTheBestApplicablePriceWinsWhateverTheSpecificity(): void
     {
         $channel = $this->catalog()->channel();
         $product = $this->catalog()->product($channel, [1000, 1000]);
@@ -80,17 +80,95 @@ final class OrderProcessingTest extends KernelTestCase
         $group = $this->catalog()->customerGroup();
         $this->catalog()->rule($channel, $product, 10, TierPriceRuleInterface::TYPE_PERCENTAGE_OFF, 2000);
         $this->catalog()->rule($channel, $first, 10, TierPriceRuleInterface::TYPE_FIXED_UNIT_PRICE, 950);
+        $this->catalog()->rule($channel, $second, 10, TierPriceRuleInterface::TYPE_FIXED_UNIT_PRICE, 750);
         $this->catalog()->rule($channel, $product, 10, TierPriceRuleInterface::TYPE_PERCENTAGE_OFF, 3000, $group);
 
         $order = $this->catalog()->cart($channel, [[$first, 10], [$second, 10]], flush: false);
-        // The variant rule wins even if the product rule is cheaper: most specific scope first.
-        self::assertSame(950, $this->catalog()->item($order, $first)->getUnitPrice());
-        self::assertSame(800, $this->catalog()->item($order, $second)->getUnitPrice());
+        // A more specific but more expensive rule never wins over a cheaper applicable one.
+        self::assertSame(800, $this->catalog()->item($order, $first)->getUnitPrice());
+        self::assertSame(750, $this->catalog()->item($order, $second)->getUnitPrice());
 
-        $customer = $this->customerOfGroup($group);
-        $order = $this->catalog()->cart($channel, [[$first, 10], [$second, 10]], $customer, flush: false);
-        self::assertSame(950, $this->catalog()->item($order, $first)->getUnitPrice());
+        $order = $this->catalog()->cart($channel, [[$first, 10], [$second, 10]], $this->customerOfGroup($group), flush: false);
+        self::assertSame(700, $this->catalog()->item($order, $first)->getUnitPrice());
         self::assertSame(700, $this->catalog()->item($order, $second)->getUnitPrice());
+    }
+
+    public function testThePriceNeverGoesUpWithTheQuantityAndTheTableShowsWhatTheCartCharges(): void
+    {
+        // Regression: everybody 10+ at 8.00, group 20+ at 9.50. A group customer buying 20
+        // used to pay 9.50 (more than 19 pieces) while the table showed 8.00 from 10.
+        $channel = $this->catalog()->channel();
+        $product = $this->catalog()->product($channel, [1000]);
+        $variant = $this->catalog()->variant($product);
+        $group = $this->catalog()->customerGroup();
+        $this->catalog()->rule($channel, $product, 10, TierPriceRuleInterface::TYPE_FIXED_UNIT_PRICE, 800);
+        $this->catalog()->rule($channel, $product, 20, TierPriceRuleInterface::TYPE_FIXED_UNIT_PRICE, 950, $group);
+        $this->catalog()->rule($channel, $variant, 30, TierPriceRuleInterface::TYPE_FIXED_UNIT_PRICE, 990);
+        $this->catalog()->rule($channel, $product, 40, TierPriceRuleInterface::TYPE_FIXED_UNIT_PRICE, 700, $group);
+        $customer = $this->customerOfGroup($group);
+
+        /** @var \Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceCalculatorInterface $calculator */
+        $calculator = self::getContainer()->get('tmonier_tier_pricing.calculator');
+        $table = $calculator->table($variant, $channel, $group);
+        $rows = array_map(static fn ($row): array => [$row->minQuantity, $row->unitPrice], $table->rows);
+        self::assertSame([[1, 1000], [10, 800], [40, 700]], $rows);
+
+        $previous = \PHP_INT_MAX;
+        foreach ([1, 9, 10, 19, 20, 29, 30, 39, 40, 80] as $quantity) {
+            $price = $this->catalog()->item($this->catalog()->cart($channel, [[$variant, $quantity]], $customer, flush: false), $variant)->getUnitPrice();
+            self::assertLessThanOrEqual($previous, $price, sprintf('quantity %d', $quantity));
+            $expected = 1000;
+            foreach ($rows as [$minQuantity, $rowPrice]) {
+                if ($quantity >= $minQuantity) {
+                    $expected = $rowPrice;
+                }
+            }
+            self::assertSame($expected, $price, sprintf('the table row for %d pieces is the price charged', $quantity));
+            $previous = $price;
+        }
+    }
+
+    public function testGroupPricesNeedASignedInCustomer(): void
+    {
+        $channel = $this->catalog()->channel();
+        $product = $this->catalog()->product($channel, [1000]);
+        $variant = $this->catalog()->variant($product);
+        $group = $this->catalog()->customerGroup();
+        $this->catalog()->rule($channel, $product, 10, TierPriceRuleInterface::TYPE_PERCENTAGE_OFF, 1000);
+        $this->catalog()->rule($channel, $product, 10, TierPriceRuleInterface::TYPE_PERCENTAGE_OFF, 3000, $group);
+        $customer = $this->customerOfGroup($group);
+
+        // Guest checkout with the e-mail of an existing group customer: Sylius attaches the
+        // customer to the order, but the order stays "created by guest".
+        $order = $this->catalog()->cart($channel, [[$variant, 10]], flush: false);
+        $order->setCustomer($customer);
+        self::assertTrue($order->isCreatedByGuest());
+        $this->catalog()->process($order);
+        self::assertSame(900, $this->catalog()->item($order, $variant)->getUnitPrice());
+
+        $order = $this->catalog()->cart($channel, [[$variant, 10]], $customer, flush: false);
+        self::assertFalse($order->isCreatedByGuest());
+        self::assertSame(700, $this->catalog()->item($order, $variant)->getUnitPrice());
+    }
+
+    public function testTheRegularPriceIsNotExposedAsTheOriginalPriceOfATierLine(): void
+    {
+        $channel = $this->catalog()->channel();
+        $product = $this->catalog()->product($channel, [1000, 1000]);
+        [$first, $second] = [$this->catalog()->variant($product, 0), $this->catalog()->variant($product, 1)];
+        $this->catalog()->rule($channel, $first, 10, TierPriceRuleInterface::TYPE_FIXED_UNIT_PRICE, 900);
+
+        $order = $this->catalog()->cart($channel, [[$first, 10], [$second, 10]], flush: false);
+
+        $tier = $this->catalog()->item($order, $first);
+        self::assertSame(900, $tier->getUnitPrice());
+        self::assertSame(900, $tier->getOriginalUnitPrice(), 'consumer channel: no reduction implied');
+        self::assertSame(1000, TierPriceOrderProcessor::priceWithoutTier($tier));
+        self::assertSame(1000, $this->catalog()->item($order, $second)->getOriginalUnitPrice());
+
+        // Back under the threshold: the recalculator gives the regular original price back.
+        $this->catalog()->changeQuantity($order, $tier, 2);
+        self::assertSame(1000, $tier->getOriginalUnitPrice());
     }
 
     public function testMixAndMatchCountsEveryVariantOfTheProduct(): void

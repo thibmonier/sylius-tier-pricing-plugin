@@ -46,6 +46,37 @@ final class TestCatalog
     }
 
     /**
+     * A channel listed in `b2b_channels` of the test application (code TMONIER_B2B), reached
+     * with the host b2b.tmonier.test, copying the locale, currency and tax zone of channel().
+     */
+    public function businessChannel(): ChannelInterface
+    {
+        $template = $this->channel();
+        /** @var FactoryInterface<ChannelInterface> $factory */
+        $factory = $this->container->get('sylius.factory.channel');
+        $channel = $factory->createNew();
+        $channel->setCode('TMONIER_B2B');
+        $channel->setName('Tier B2B');
+        $channel->setHostname('b2b.tmonier.test');
+        $channel->setEnabled(true);
+        $channel->setTaxCalculationStrategy($template->getTaxCalculationStrategy());
+        $channel->setDefaultLocale($template->getDefaultLocale());
+        foreach ($template->getLocales() as $locale) {
+            $channel->addLocale($locale);
+        }
+        $channel->setBaseCurrency($template->getBaseCurrency());
+        foreach ($template->getCurrencies() as $currency) {
+            $channel->addCurrency($currency);
+        }
+        $channel->setDefaultTaxZone($template->getDefaultTaxZone());
+        $channel->setMenuTaxon($template->getMenuTaxon());
+        $this->entityManager()->persist($channel);
+        $this->entityManager()->flush();
+
+        return $channel;
+    }
+
+    /**
      * A new enabled product sold in the channel, one untracked variant per price.
      *
      * @param list<int> $prices
@@ -199,8 +230,11 @@ final class TestCatalog
         $order->setChannel($channel);
         $order->setLocaleCode((string) $channel->getDefaultLocale()?->getCode());
         $order->setCurrencyCode((string) $channel->getBaseCurrency()?->getCode());
-        // "With authorization": found by the cart context of the logged-in customer.
-        $order->setCustomerWithAuthorization($customer);
+        // "With authorization": a signed-in customer (found by the cart context, gets group
+        // prices); without customer the cart is a guest cart.
+        if (null !== $customer) {
+            $order->setCustomerWithAuthorization($customer);
+        }
         foreach ($lines as [$variant, $quantity]) {
             $item = $itemFactory->createNew();
             $item->setVariant($variant);

@@ -48,11 +48,18 @@ final class TierPriceTableProvider implements ProviderInterface
         foreach ($table->rows as $row) {
             $tiers[] = [
                 'minQuantity' => $row->minQuantity,
-                'unitPrice' => $this->displayResolver->displayAmount($variant, $channel, $row->unitPrice),
+                'unitPrice' => $row->unitPrice,
                 'mixAndMatch' => $row->mixAndMatch,
             ];
         }
 
-        return new TierPriceTableView($code, (string) $channel->getBaseCurrency()?->getCode(), !$this->displayResolver->isBusinessChannel($channel), $tiers);
+        $convention = $this->displayResolver->taxConvention($variant, $channel);
+
+        return new TierPriceTableView(
+            $code,
+            (string) $channel->getBaseCurrency()?->getCode(),
+            null === $convention ? null : PriceDisplayResolverInterface::TAX_INCLUDED === $convention,
+            $tiers,
+        );
     }
 }

@@ -25,7 +25,8 @@ final class TierPriceRuleCsvFormat
     public static function parseValue(string $value): ?int
     {
         $value = str_replace(',', '.', trim($value));
-        if (1 !== preg_match('/^-?\d+(\.\d{1,2})?$/', $value)) {
+        // At most 10 integer digits: larger values are refused by the validator, not by the database.
+        if (1 !== preg_match('/^-?\d{1,10}(\.\d{1,2})?$/', $value)) {
             return null;
         }
 

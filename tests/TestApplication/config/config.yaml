@@ -1,8 +1,10 @@
 imports:
     - { resource: "@TmonierSyliusTierPricingPlugin/config/config.yaml" }
+    - { resource: "exemption.php" }
 
 tmonier_sylius_tier_pricing:
-    b2b_channels: []
+    # TestCatalog::businessChannel() creates it in the test transaction.
+    b2b_channels: ['TMONIER_B2B']
 
 # Demo price breaks on the first products of every channel (dev and test databases).
 sylius_fixtures:

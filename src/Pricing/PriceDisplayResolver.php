@@ -6,18 +6,20 @@ namespace Tmonier\SyliusTierPricingPlugin\Pricing;
 
 use Sylius\Component\Core\Model\ChannelInterface;
 use Sylius\Component\Core\Model\ProductVariantInterface;
-use Sylius\Component\Taxation\Calculator\CalculatorInterface;
 use Sylius\Component\Taxation\Resolver\TaxRateResolverInterface;
+use Symfony\Contracts\Service\ResetInterface;
 
-final class PriceDisplayResolver implements PriceDisplayResolverInterface
+final class PriceDisplayResolver implements PriceDisplayResolverInterface, ResetInterface
 {
+    /** @var array<string, string|null> tax convention per tax category and zone (one query per pair and request) */
+    private array $conventions = [];
+
     /**
      * @param list<string> $businessChannelCodes
      * @param array{b2c: bool, b2b: bool} $percentageColumn
      */
     public function __construct(
         private readonly TaxRateResolverInterface $taxRateResolver,
-        private readonly CalculatorInterface $taxCalculator,
         private readonly array $businessChannelCodes,
         private readonly array $percentageColumn,
     ) {
@@ -33,19 +35,24 @@ final class PriceDisplayResolver implements PriceDisplayResolverInterface
         return $this->percentageColumn[$this->isBusinessChannel($channel) ? 'b2b' : 'b2c'];
     }
 
-    public function displayAmount(ProductVariantInterface $variant, ChannelInterface $channel, int $amount): int
+    public function taxConvention(ProductVariantInterface $variant, ChannelInterface $channel): ?string
     {
         $zone = $channel->getDefaultTaxZone();
-        $rate = null === $zone ? null : $this->taxRateResolver->resolve($variant, ['zone' => $zone]);
-        if (null === $rate) {
-            return $amount;
+        $category = $variant->getTaxCategory();
+        if (null === $zone || null === $category) {
+            return null;
+        }
+        $key = sprintf('%s|%s', spl_object_id($category), spl_object_id($zone));
+        if (!array_key_exists($key, $this->conventions)) {
+            $rate = $this->taxRateResolver->resolve($variant, ['zone' => $zone]);
+            $this->conventions[$key] = null === $rate ? null : ($rate->isIncludedInPrice() ? self::TAX_INCLUDED : self::TAX_EXCLUDED);
         }
 
-        $tax = (int) round($this->taxCalculator->calculate((float) $amount, $rate));
-        if ($this->isBusinessChannel($channel)) {
-            return $rate->isIncludedInPrice() ? $amount - $tax : $amount;
-        }
+        return $this->conventions[$key];
+    }
 
-        return $rate->isIncludedInPrice() ? $amount : $amount + $tax;
+    public function reset(): void
+    {
+        $this->conventions = [];
     }
 }
