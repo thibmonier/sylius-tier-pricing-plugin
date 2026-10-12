@@ -26,7 +26,9 @@ use Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceCalculatorInterface;
  * written (the price history used for the Omnibus lowest price stays the catalog one): only the
  * unit price of the cart line changes (and, in consumer channels, its original unit price, so that
  * no reduction from the regular price is implied), and a neutral `tmonier_tier_price` adjustment
- * (no effect on totals) records the rule applied with the price without tier.
+ * (no effect on totals) records the rule applied with the price without tier (in its details; its
+ * amount is the difference in business channels, 0 in consumer channels, where the shop API
+ * adjustment endpoints would otherwise show it as a reduction).
  */
 final class TierPriceOrderProcessor implements OrderProcessorInterface
 {
@@ -99,7 +101,9 @@ final class TierPriceOrderProcessor implements OrderProcessorInterface
             $item->addAdjustment($this->adjustmentFactory->createWithData(
                 self::ADJUSTMENT_TYPE,
                 $this->translator->trans('tmonier_tier_pricing.ui.adjustment_label', ['%quantity%' => $quote->rule->minQuantity], 'messages', $order->getLocaleCode()),
-                ($quote->unitPrice - $currentPrice) * $item->getQuantity(),
+                // Consumer channels: amount 0, so that no API client lists it as a reduction from the
+                // regular price (the price without tier stays in the details, not exposed by the shop API).
+                $hideRegularPrice ? 0 : ($quote->unitPrice - $currentPrice) * $item->getQuantity(),
                 true,
                 [
                     'ruleId' => $quote->rule->id,

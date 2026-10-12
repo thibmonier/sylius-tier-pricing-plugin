@@ -117,6 +117,12 @@ for each threshold: what is shown is what is charged (`OrderProcessingTest`, res
   taxon target and a non-default cumulation; admin API exposes `taxon` (IRI) and `cumulation`;
   shop API tiers get `taxonBasis`; CSV has two more columns (`taxon`, `cumulation`, 1.0 files
   still accepted).
+- Review fixes (1.1): a 1.0 CSV (no `cumulation` column) keeps the cumulation of existing rules;
+  the neutral marker has a zero amount in consumer channels (the shop API adjustment endpoints
+  exposed the difference with the regular price since 1.0; `priceWithoutTier` stays in the
+  details, not serialized by the shop API); the masking of lower category tiers by product rules
+  (decision validated by the review) is shown in the admin (product tab, rule form; not in the
+  grid, which must keep one query per page) with a README recipe.
 - Migrations: `Version20261013100000` (columns `taxon_id` + FK + indexes, `cumulation` NOT NULL
   DEFAULT 'best_of': existing rows keep the 1.0 behaviour), `Version20261013100001` (CHECK
   recreated with the taxon target; 1.0 rows satisfy it), `Version20261013100002` (PostgreSQL

@@ -26,6 +26,7 @@ tmonier_tier_pricing:
         tier_applied: 'Staffelpreis ab %quantity% Stück'
         adjustment_label: 'Staffelpreis ab %quantity% Stück'
         taxon_basis: 'Alle Produkte der Kategorie zählen zur Menge.'
+        masked_taxon_rules: 'Kanal %channel%: Die Regeln dieses Produkts beginnen bei %product_quantity% Stück und ersetzen die Kategorieregeln, die bei %taxon_quantity% Stück beginnen. Unter %product_quantity% Stück gilt für dieses Produkt keine Kategoriestaffel: Übernehmen Sie die unteren Kategoriestaffeln in das Produkt, um sie zu behalten.'
     form:
         all_customers: 'Alle Kunden'
         scope: 'Gilt für'

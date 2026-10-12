@@ -26,6 +26,7 @@ tmonier_tier_pricing:
         tier_applied: 'Cena progowa od %quantity% szt.'
         adjustment_label: 'Cena progowa od %quantity% szt.'
         taxon_basis: 'Wszystkie produkty z kategorii wliczają się do ilości.'
+        masked_taxon_rules: 'Kanał %channel%: reguły tego produktu zaczynają się od %product_quantity% szt. i zastępują reguły kategorii, które zaczynają się od %taxon_quantity% szt. Poniżej %product_quantity% szt. do tego produktu nie stosuje się żaden próg kategorii: skopiuj niższe progi kategorii do produktu, aby je zachować.'
     form:
         all_customers: 'Wszyscy klienci'
         scope: 'Dotyczy'

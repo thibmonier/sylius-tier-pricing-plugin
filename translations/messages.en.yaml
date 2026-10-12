@@ -26,6 +26,7 @@ tmonier_tier_pricing:
         tier_applied: 'Volume price from %quantity% pieces'
         adjustment_label: 'Volume price from %quantity% pieces'
         taxon_basis: 'All products of the category count towards the quantity.'
+        masked_taxon_rules: 'Channel %channel%: the rules of this product start at %product_quantity% pieces and replace the category rules, which start at %taxon_quantity% pieces. Below %product_quantity% pieces, no category tier applies to this product: copy the lower category tiers onto the product to keep them.'
     form:
         all_customers: 'All customers'
         scope: 'Applies to'

@@ -1,0 +1,10 @@
+{# Product rules hide the taxon rules below their lowest threshold (precedence). `product`, optional `channel_code`. #}
+{% for masked in tmonier_tier_pricing_masked_taxon_thresholds(product, channel_code|default(null)) %}
+    <div class="alert alert-warning mb-3" {{ sylius_test_html_attribute('tmonier-tier-masked-taxon-rules', masked.channelCode) }}>
+        {{ 'tmonier_tier_pricing.ui.masked_taxon_rules'|trans({
+            '%channel%': masked.channelCode,
+            '%product_quantity%': masked.productMinQuantity,
+            '%taxon_quantity%': masked.taxonMinQuantity,
+        }) }}
+    </div>
+{% endfor %}

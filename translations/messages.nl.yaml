@@ -26,6 +26,7 @@ tmonier_tier_pricing:
         tier_applied: 'Staffelprijs vanaf %quantity% stuks'
         adjustment_label: 'Staffelprijs vanaf %quantity% stuks'
         taxon_basis: 'Alle producten van de categorie tellen mee voor het aantal.'
+        masked_taxon_rules: 'Kanaal %channel%: de regels van dit product beginnen bij %product_quantity% stuks en vervangen de categorieregels, die beginnen bij %taxon_quantity% stuks. Onder %product_quantity% stuks geldt voor dit product geen enkele categoriestaffel: kopieer de lagere categoriestaffels naar het product om ze te behouden.'
     form:
         all_customers: 'Alle klanten'
         scope: 'Geldt voor'

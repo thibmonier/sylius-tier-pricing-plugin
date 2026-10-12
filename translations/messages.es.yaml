@@ -26,6 +26,7 @@ tmonier_tier_pricing:
         tier_applied: 'Precio por volumen desde %quantity% unidades'
         adjustment_label: 'Precio por volumen desde %quantity% unidades'
         taxon_basis: 'Todos los productos de la categoría cuentan para la cantidad.'
+        masked_taxon_rules: 'Canal %channel%: las reglas de este producto empiezan en %product_quantity% unidades y sustituyen a las reglas de la categoría, que empiezan en %taxon_quantity% unidades. Por debajo de %product_quantity% unidades no se aplica ningún tramo de la categoría a este producto: copie los tramos inferiores de la categoría en el producto para conservarlos.'
     form:
         all_customers: 'Todos los clientes'
         scope: 'Se aplica a'

@@ -26,6 +26,7 @@ tmonier_tier_pricing:
         tier_applied: 'Prix dégressif dès %quantity% pièces'
         adjustment_label: 'Prix dégressif dès %quantity% pièces'
         taxon_basis: 'Tous les produits de la catégorie comptent dans la quantité.'
+        masked_taxon_rules: 'Canal %channel% : les règles de ce produit commencent à %product_quantity% pièces et remplacent les règles de catégorie, qui commencent à %taxon_quantity% pièces. En dessous de %product_quantity% pièces, aucun palier de catégorie ne s''applique à ce produit : recopiez les paliers inférieurs de la catégorie sur le produit pour les conserver.'
     form:
         all_customers: 'Tous les clients'
         scope: 'S’applique à'

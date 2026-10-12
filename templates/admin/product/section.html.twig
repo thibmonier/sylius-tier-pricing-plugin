@@ -12,6 +12,9 @@
                 </a>
             </div>
         </div>
+        {% if rules is not empty %}
+            <div class="card-body pb-0">{% include '@TmonierSyliusTierPricingPlugin/admin/shared/masked_taxon_thresholds.html.twig' with { product } only %}</div>
+        {% endif %}
         {% if rules is empty %}
             <div class="card-body text-secondary">{{ 'tmonier_tier_pricing.ui.no_rules'|trans }}</div>
         {% else %}

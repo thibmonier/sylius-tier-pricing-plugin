@@ -197,7 +197,10 @@ final class TierPriceRuleCsvImporter
         $rule->setProduct($product);
         $rule->setVariant($variant);
         $rule->setTaxon($taxon);
-        $rule->setCumulation($cumulation);
+        // A 1.0 file has no cumulation column: an existing rule keeps its 1.1 setting.
+        if ($isNew || in_array('cumulation', $columns, true)) {
+            $rule->setCumulation($cumulation);
+        }
         $rule->setQuantityBasis('' === $data['quantity_basis'] ? TierPriceRuleInterface::BASIS_LINE : $data['quantity_basis']);
         $rule->setMinQuantity((int) $data['min_quantity']);
         $rule->setType($data['type']);

@@ -26,6 +26,7 @@ tmonier_tier_pricing:
         tier_applied: 'Prezzo a scaglioni da %quantity% pezzi'
         adjustment_label: 'Prezzo a scaglioni da %quantity% pezzi'
         taxon_basis: 'Tutti i prodotti della categoria contano per la quantità.'
+        masked_taxon_rules: 'Canale %channel%: le regole di questo prodotto iniziano da %product_quantity% pezzi e sostituiscono le regole della categoria, che iniziano da %taxon_quantity% pezzi. Sotto i %product_quantity% pezzi nessuno scaglione della categoria si applica a questo prodotto: copia gli scaglioni inferiori della categoria sul prodotto per mantenerli.'
     form:
         all_customers: 'Tutti i clienti'
         scope: 'Si applica a'

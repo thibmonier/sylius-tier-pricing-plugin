@@ -15,6 +15,8 @@
 - **Cumulation with catalog promotions**, per rule (`cumulation`): `best_of` (default, 1.0
   behaviour), `on_top` (percentage off the promotion price), `skip_if_promoted`.
 - `TaxonQuantityCounter`.
+- Admin warning (product page tab, rule form) when product rules hide category rules with a
+  lower threshold, and a README recipe.
 
 ### Changed
 
@@ -27,6 +29,10 @@
   `taxonId` and `cumulation`.
 - CSV export writes the 14 columns of 1.1; the import accepts 1.0 (12 columns) and 1.1 files.
 - `phpunit.xml.dist`: the default suite runs every test once.
+- Consumer channels: the neutral `tmonier_tier_price` adjustment has a zero amount (the price
+  without tier stays in its details), so that the shop API adjustment endpoints show no
+  reduction from the regular price (it was exposed since 1.0). Business channels unchanged.
+- CSV import of a 1.0 file (no `cumulation` column) keeps the cumulation of existing rules.
 
 ### Fixed
 

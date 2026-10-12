@@ -283,4 +283,33 @@ final class AdminTierPriceRuleTest extends WebTestCase
         self::assertResponseStatusCodeSame(422);
         self::assertStringContainsString('Only a taxon rule can count all the products of its taxon.', (string) $this->client->getResponse()->getContent());
     }
+
+    /** Precedence made visible: product rules from 50 hide the category rules from 10. */
+    public function testTheAdminWarnsWhenProductRulesHideLowerCategoryTiers(): void
+    {
+        $channel = $this->catalog()->channel();
+        $tools = $this->catalog()->taxon();
+        $masked = $this->catalog()->product($channel);
+        $fine = $this->catalog()->product($channel);
+        $this->catalog()->classify($masked, false, $tools);
+        $this->catalog()->classify($fine, true, $tools);
+        $this->catalog()->rule($channel, $tools, 10, TierPriceRuleInterface::TYPE_PERCENTAGE_OFF, 500);
+        $rule = $this->catalog()->rule($channel, $this->catalog()->variant($masked), 50, TierPriceRuleInterface::TYPE_PERCENTAGE_OFF, 1000);
+        $this->catalog()->rule($channel, $fine, 5, TierPriceRuleInterface::TYPE_PERCENTAGE_OFF, 1000);
+        $this->loginAdmin();
+
+        $crawler = $this->client->request('GET', sprintf('/admin/products/%d/edit', $this->idOf($masked)));
+        self::assertResponseIsSuccessful();
+        $warning = $crawler->filter(sprintf('[data-test-tmonier-tier-masked-taxon-rules="%s"]', (string) $channel->getCode()));
+        self::assertCount(1, $warning);
+        self::assertStringContainsString('start at 50 pieces', $warning->text());
+        self::assertStringContainsString('start at 10 pieces', $warning->text());
+
+        $crawler = $this->client->request('GET', sprintf('/admin/tier-price-rules/%d/edit', $this->idOf($rule)));
+        self::assertResponseIsSuccessful();
+        self::assertCount(1, $crawler->filter('[data-test-tmonier-tier-masked-taxon-rules]'));
+
+        $crawler = $this->client->request('GET', sprintf('/admin/products/%d/edit', $this->idOf($fine)));
+        self::assertCount(0, $crawler->filter('[data-test-tmonier-tier-masked-taxon-rules]'));
+    }
 }

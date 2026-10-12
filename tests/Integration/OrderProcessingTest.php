@@ -60,7 +60,8 @@ final class OrderProcessingTest extends KernelTestCase
         $marker = $markers->first();
         self::assertInstanceOf(AdjustmentInterface::class, $marker);
         self::assertTrue($marker->isNeutral());
-        self::assertSame(-2000, $marker->getAmount());
+        // Consumer channel: no amount (the shop API would list it as a reduction).
+        self::assertSame(0, $marker->getAmount());
         self::assertSame($rule->getId(), $marker->getDetails()['ruleId']);
         self::assertSame(1000, $marker->getDetails()['priceWithoutTier']);
         self::assertSame(8000, $item->getTotal() - $item->getTaxTotal());

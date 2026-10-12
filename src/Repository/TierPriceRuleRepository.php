@@ -99,6 +99,51 @@ class TierPriceRuleRepository extends EntityRepository implements TierPriceRuleR
         return $result;
     }
 
+    public function findMaskedTaxonThresholds(ProductInterface $product): array
+    {
+        /** @var list<array{channelCode: string, quantity: int|string}> $productRows */
+        $productRows = $this->createQueryBuilder('o')
+            ->select('channel.code AS channelCode', 'MIN(o.minQuantity) AS quantity')
+            ->innerJoin('o.channel', 'channel')
+            ->leftJoin('o.variant', 'variant')
+            ->andWhere('o.enabled = true')
+            ->andWhere('o.product = :product OR variant.product = :product')
+            ->setParameter('product', $product)
+            ->groupBy('channel.code')
+            ->getQuery()
+            ->getArrayResult()
+        ;
+        if ([] === $productRows) {
+            return [];
+        }
+        /** @var list<array{channelCode: string, quantity: int|string}> $taxonRows */
+        $taxonRows = $this->createQueryBuilder('o')
+            ->select('channel.code AS channelCode', 'MIN(o.minQuantity) AS quantity')
+            ->innerJoin('o.channel', 'channel')
+            ->innerJoin('o.taxon', 'taxon')
+            ->andWhere('o.enabled = true')
+            ->andWhere(sprintf(
+                'EXISTS (SELECT productTaxon.id FROM %s productTaxon INNER JOIN productTaxon.taxon productTaxonTaxon WHERE productTaxon.product = :product AND productTaxonTaxon.root = taxon.root AND productTaxonTaxon.left >= taxon.left AND productTaxonTaxon.right <= taxon.right)',
+                ProductTaxonInterface::class,
+            ))
+            ->setParameter('product', $product)
+            ->groupBy('channel.code')
+            ->getQuery()
+            ->getArrayResult()
+        ;
+        $taxonMinimums = array_column($taxonRows, 'quantity', 'channelCode');
+
+        $masked = [];
+        foreach ($productRows as $row) {
+            $taxonQuantity = $taxonMinimums[$row['channelCode']] ?? null;
+            if (null !== $taxonQuantity && (int) $taxonQuantity < (int) $row['quantity']) {
+                $masked[] = ['channelCode' => $row['channelCode'], 'productMinQuantity' => (int) $row['quantity'], 'taxonMinQuantity' => (int) $taxonQuantity];
+            }
+        }
+
+        return $masked;
+    }
+
     public function findByProduct(ProductInterface $product): array
     {
         /** @var list<TierPriceRuleInterface> $result */

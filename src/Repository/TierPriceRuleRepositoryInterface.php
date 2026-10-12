@@ -36,6 +36,15 @@ interface TierPriceRuleRepositoryInterface extends RepositoryInterface
     /** @return list<TierPriceRuleInterface> rules of the product and of its variants */
     public function findByProduct(ProductInterface $product): array;
 
+    /**
+     * Channels where the product (or variant) rules of the product hide taxon rules with a lower
+     * threshold (precedence: below the lowest product threshold, the taxon rules no longer
+     * apply). Enabled rules, any customer group.
+     *
+     * @return list<array{channelCode: string, productMinQuantity: int, taxonMinQuantity: int}>
+     */
+    public function findMaskedTaxonThresholds(ProductInterface $product): array;
+
     /** Grid query; with the admin locale, product names are fetched in the same query. */
     public function createListQueryBuilder(?string $localeCode = null): QueryBuilder;
 }

@@ -287,4 +287,26 @@ final class CsvImportExportTest extends KernelTestCase
         rewind($stream);
         self::assertStringContainsString(sprintf(",taxon,10,percentage_off,10,1,,,%s,on_top\n", $tools->getCode()), (string) stream_get_contents($stream));
     }
+
+    /** Upserting a 1.0 file (no cumulation column) keeps the 1.1 setting of an existing rule; a new rule gets best_of. */
+    public function testA10FileKeepsTheCumulationOfExistingRules(): void
+    {
+        $channel = $this->catalog()->channel();
+        $product = $this->catalog()->product($channel, [1000]);
+        $other = $this->catalog()->product($channel, [1000]);
+        $rule = $this->catalog()->rule($channel, $product, 10, TierPriceRuleInterface::TYPE_PERCENTAGE_OFF, 1000, cumulation: TierPriceRuleInterface::CUMULATION_ON_TOP);
+        $id = $rule->getId();
+
+        $result = $this->importer()->import($this->stream(self::HEADER . sprintf("%s,,product,%s,,line,10,percentage_off,12,1,,\n%s,,product,%s,,line,10,percentage_off,5,1,,\n", $channel->getCode(), $product->getCode(), $channel->getCode(), $other->getCode())));
+
+        self::assertSame([], $result->errors);
+        self::assertSame(1, $result->updated);
+        $this->entityManager()->clear();
+        $updated = $this->entityManager()->getRepository(TierPriceRuleInterface::class)->find($id);
+        self::assertInstanceOf(TierPriceRuleInterface::class, $updated);
+        self::assertSame(1200, $updated->getValue());
+        self::assertSame(TierPriceRuleInterface::CUMULATION_ON_TOP, $updated->getCumulation());
+        $created = $this->entityManager()->getRepository(TierPriceRuleInterface::class)->findOneBy(['product' => $other->getId()]);
+        self::assertSame(TierPriceRuleInterface::CUMULATION_BEST_OF, $created?->getCumulation());
+    }
 }

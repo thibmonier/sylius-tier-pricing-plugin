@@ -207,4 +207,33 @@ final class ApiTest extends WebTestCase
         self::assertSame('best_of', $created['cumulation'] ?? null);
         self::assertNull($created['taxon'] ?? null);
     }
+
+    /** Consumer channel: the adjustment endpoints of the shop API show no reduction from the regular price. */
+    public function testTheShopApiAdjustmentsShowNoReductionForATierLine(): void
+    {
+        $channel = $this->catalog()->channel();
+        $product = $this->catalog()->product($channel, [1000]);
+        $variant = $this->catalog()->variant($product);
+        $this->catalog()->rule($channel, $product, 10, TierPriceRuleInterface::TYPE_FIXED_UNIT_PRICE, 900);
+        $order = $this->catalog()->cart($channel, [[$variant, 10]], flush: false);
+        $order->setTokenValue('tmonier-tier-' . bin2hex(random_bytes(6)));
+        $this->entityManager()->persist($order);
+        $this->entityManager()->flush();
+        $item = $this->catalog()->item($order, $variant);
+        self::assertSame(9000, $order->getItemsTotal());
+
+        foreach ([sprintf('/api/v2/shop/orders/%s/adjustments', (string) $order->getTokenValue()), sprintf('/api/v2/shop/orders/%s/items/%d/adjustments', (string) $order->getTokenValue(), $this->idOf($item))] as $uri) {
+            $this->client->request('GET', $uri, server: ['HTTP_ACCEPT' => 'application/json']);
+            self::assertResponseIsSuccessful();
+            $adjustments = json_decode((string) $this->client->getResponse()->getContent(), true);
+            self::assertIsArray($adjustments);
+            foreach ($adjustments as $adjustment) {
+                self::assertIsArray($adjustment);
+                if ('tmonier_tier_price' === ($adjustment['type'] ?? null)) {
+                    self::assertSame(0, $adjustment['amount'] ?? null, $uri);
+                }
+            }
+            self::assertStringNotContainsString('-1000', (string) $this->client->getResponse()->getContent(), $uri);
+        }
+    }
 }

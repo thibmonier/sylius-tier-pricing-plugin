@@ -52,6 +52,7 @@ final class TierPricingExtension extends AbstractExtension
             new TwigFunction('tmonier_tier_pricing_shows_percentage', $this->showsPercentage(...)),
             new TwigFunction('tmonier_tier_pricing_item_tier', $this->itemTier(...)),
             new TwigFunction('tmonier_tier_pricing_rules_of_product', $this->rulesOfProduct(...)),
+            new TwigFunction('tmonier_tier_pricing_masked_taxon_thresholds', $this->maskedTaxonThresholds(...)),
         ];
     }
 
@@ -135,6 +136,24 @@ final class TierPricingExtension extends AbstractExtension
         }
 
         return $details;
+    }
+
+    /**
+     * Admin: channels where the product rules hide lower taxon thresholds (`$channelCode`: only
+     * that channel).
+     *
+     * @return list<array{channelCode: string, productMinQuantity: int, taxonMinQuantity: int}>
+     */
+    public function maskedTaxonThresholds(?ProductInterface $product, ?string $channelCode = null): array
+    {
+        if (null === $product || null === $product->getId()) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $this->ruleRepository->findMaskedTaxonThresholds($product),
+            static fn (array $masked): bool => null === $channelCode || $masked['channelCode'] === $channelCode,
+        ));
     }
 
     /** @return list<\Tmonier\SyliusTierPricingPlugin\Entity\TierPriceRuleInterface> */

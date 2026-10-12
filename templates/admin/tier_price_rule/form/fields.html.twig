@@ -1,4 +1,8 @@
 {% set form = hookable_metadata.context.form %}
+{% set rule = form.vars.value %}
+{% if rule.id is not null and rule.scope != 'taxon' and rule.channel is not null %}
+    {% include '@TmonierSyliusTierPricingPlugin/admin/shared/masked_taxon_thresholds.html.twig' with { product: rule.targetProduct, channel_code: rule.channel.code } only %}
+{% endif %}
 
 <div class="row">
     <div class="col-12 col-md-6">{{ form_row(form.channel) }}</div>

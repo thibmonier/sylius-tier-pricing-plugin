@@ -20,11 +20,11 @@ and open source.
 | Lower the unit price from a quantity | **Rules**: from `N` pieces (N >= 2), a **fixed unit price** or a **percentage off** the regular price, per channel, optionally for one **customer group**, with optional start and end dates. |
 | Target what you sell | A rule applies to **one variant**, to **every variant of a product** or *(1.1)* to **every product of a taxon** and of its children (through any of the product's taxons, not only the main one). The threshold counts the cart line, **every variant of the product** (mix and match: 6 red + 4 blue = 10) or *(1.1)* **every product of the taxon** (4 drills + 6 saws = 10 tools). |
 | Clear precedence *(1.1)* | Variant and product rules first, else the rules of the **deepest taxon** of the product, else the regular price. |
-| Predictable results | Among the rules that apply to the customer and the quantities, the **lowest unit price wins** (specificity only breaks ties): the price never goes up with the quantity, and the table shows exactly what the cart charges. |
+| Predictable results | The most specific level that has rules for the customer wins (variant/product, else the deepest taxon, see [How prices are computed](#how-prices-are-computed)); within it, the **lowest unit price** among the rules reached wins (specificity only breaks ties). The price never goes up with the quantity, and the product table shows what the cart charges for the line (taxon-basis tiers also count the other products of the taxon in the cart). |
 | Correct carts | An order processor (priority 44) changes the unit price of the cart line; cart promotions, shipping and taxes are computed on it. Locked (immutable) lines, e.g. negotiated quote lines, are left untouched. |
 | No double discount, or a chosen one | Per rule *(1.1)*: **best of** the tier price and the catalog promotion price (default, 1.0 behaviour; a percentage is computed on the regular price), **on top** (the percentage is taken off the promotion price) or **skip if promoted** (no tier price for a variant with a catalog promotion). The channel pricing minimum price is a floor; cart promotions always apply on top of the tier price. |
 | Show the prices | **Tier table** on the product page (re-rendered when the variant changes), **"add 3 more to pay 8.00 € per piece"** nudges on the product page and in the cart, "volume price from 10 pieces" on cart lines. |
-| Stay on the right side of price rules | Tiers are shown as conditional prices: no struck-through price (also in the shop API: `originalUnitPrice` of a tier line is the tier price in consumer channels), no "-x %" in consumer channels by default, amounts in the tax convention of the Sylius prices next to them, labelled (see [Legal notes](#legal-notes)). |
+| Stay on the right side of price rules | Tiers are shown as conditional prices: no struck-through price (also in the shop API: in consumer channels `originalUnitPrice` of a tier line is the tier price and its `tmonier_tier_price` adjustment has a zero amount), no "-x %" in consumer channels by default, amounts in the tax convention of the Sylius prices next to them, labelled (see [Legal notes](#legal-notes)). |
 | Manage the rules | Admin grid (*Catalog > Volume pricing*), rule form, **Volume pricing tab** on the product page. |
 | Bulk changes | `tmonier:tier-pricing:import` / `:export` (CSV, upsert or replace, dry run, all or nothing). |
 | Headless | Admin API CRUD `/api/v2/admin/tier-price-rules`, shop API `GET /api/v2/shop/product-variants/{code}/tier-prices`. |
@@ -205,7 +205,11 @@ given quantities.
   customer and today, the rules of the deepest taxon that has such rules (several taxons at that
   depth compete); else none. A level is chosen whatever the quantity, so a product rule from 20
   pieces hides a taxon rule from 5 pieces: below 20 pieces there is no tier price (the price
-  never goes up with the quantity).
+  never goes up with the quantity). The admin warns about it on the product page (Volume
+  pricing tab) and on the rule form.
+  **Recipe**: to keep the category tiers below the product ones, copy them onto the product
+  (e.g. category 10+ -5 %, product 50+ -10 %: add a product rule 10+ -5 %), or give the product
+  no rule and let the category apply.
 - Within that level, the rules applicable for the line quantity, the product quantity or the
   taxon quantity (mutable, non-exempt lines only; `skip_if_promoted` rules are left out for a
   variant with a catalog promotion) each give a price: fixed price, or regular price (`on_top`:
@@ -217,7 +221,12 @@ given quantities.
   neither the cart nor a headless front using the shop API (`originalUnitPrice > unitPrice`)
   shows the regular price struck through. Business channels keep the regular price there.
 - The line gets a **neutral** `tmonier_tier_price` adjustment (no effect on totals) with the
-  rule id, threshold and price without tier: the order keeps a record of the tier applied.
+  rule id, threshold and price without tier in its details: the order keeps a record of the
+  tier applied. Its amount is the difference with the price without tier in business channels,
+  **0 in consumer channels** (1.1): the shop API adjustment endpoints
+  (`/orders/{token}/adjustments`, `/orders/{token}/items/{id}/adjustments`) would otherwise let a
+  headless front list it as a reduction from the regular price. The details are not exposed by
+  the shop API.
 - `ChannelPricing` is never written: the price history used for the "lowest price before the
   discount" stays the catalog one.
 - Consequence: cart promotion rules on the items total and free shipping thresholds see the
