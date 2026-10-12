@@ -61,19 +61,23 @@ Brille24 importer, Sylius Plus cohabitation (not testable offline).
 
 ### 3.2 Resolution (`TierPriceResolver`, pure)
 
-Candidates: enabled rules of the product in the channel, for everybody or the customer's group.
-A rule applies when its target matches, its threshold is reached for its quantity basis and
-it is active now. Among applicable rules: variant scope over product scope, then group rule
-over everybody, then highest threshold, then lowest id (stable).
+Candidates: enabled rules of the product in the channel, for everybody or the customer's group
+(group rules only for signed-in customers by default: a guest typing the e-mail of an existing
+B2B customer at checkout gets that customer attached by Sylius). A rule applies when its target
+matches, its threshold is reached for its quantity basis and it is active now. Each applicable
+rule gives a price: fixed value or `round_half_up(base × (1 − p))` where `base` is the regular
+price (`originalPrice` when a catalog promotion is applied, else the price), then
+`max(·, minimumPrice, 0)`, then `min(·, current price)` (**best of** tier and catalog promotion,
+never cumulated).
 
-Decision: "most specific wins" is applied among the **applicable** rules, not by selecting a
-table first. A variant table starting at 100 does not hide the product tiers at 10 and 50:
-merchants add exceptions without repeating the whole table.
-
-Price: fixed value or `round_half_up(base × (1 − p))` where `base` is the regular price
-(`originalPrice` when a catalog promotion is applied, else the price), then
-`max(·, minimumPrice, 0)`, then `min(·, current price)`: **best of** tier and catalog
-promotion, never cumulated.
+Decision (revised after review, 2026-10-12): **the lowest price wins** among the applicable
+rules; specificity (variant over product, group over everybody, highest threshold, then
+oldest rule) only breaks ties. The first version ranked specificity before the threshold and
+never compared prices: a group rule at 20+ for 9.50 beat an everybody rule at 10+ for 8.00, so
+20 pieces cost more than 19 and the table (which dropped the non-decreasing row) advertised a
+price the cart did not charge. With best price wins, the set of applicable rules only grows
+with the quantity, so the price never goes up, and the table is computed with the same function
+for each threshold: what is shown is what is charged (`OrderProcessingTest`, resolver tests).
 
 ### 3.3 Order processing (`TierPriceOrderProcessor`, priority 44)
 
@@ -82,7 +86,9 @@ promotion, never cumulated.
   recalculator), before shipment (40), shipping charges (30), promotions (20), taxes (10).
 - `canBeProcessed()` checked; immutable lines skipped and not counted; lines matched by a
   `TierPriceExemptionCheckerInterface` (tagged, composite) skipped and not counted.
-- Writes `unitPrice` of the line only; never `ChannelPricing` (Omnibus price history).
+- Writes `unitPrice` of the line (and, in consumer channels, `originalUnitPrice` = tier price,
+  so that the shop API exposes no reduction from the regular price); never `ChannelPricing`
+  (Omnibus price history).
 - Marker: neutral adjustment `tmonier_tier_price` on the item (no effect on totals). The
   adjustments clearer (60) only clears the core types, so the processor removes its own
   markers on mutable lines before recomputing. Markers on immutable lines are left as they are.
@@ -104,10 +110,13 @@ promotion, never cumulated.
   struck-through price for a line with a tier price; only a cart promotion on top is shown,
   from the tier price
   (https://github.com/Sylius/Sylius/blob/2.3/src/Sylius/Bundle/ShopBundle/Twig/OrderItemOriginalPriceToDisplayExtension.php).
-- Taxes: Sylius has no "prices with/without tax" setting per channel. `PriceDisplayResolver`
-  uses the tax rate of the variant in the channel default tax zone: B2C channels show
-  `amount` (rate included) or `amount + tax`; channels listed in `b2b_channels` show `amount`
-  (rate not included) or `amount − included tax`. Tested on both `includedInPrice` cases.
+- Taxes (revised after review): Sylius has no "prices with/without tax" setting per channel.
+  Converting tier amounts to gross in B2C put tax-included amounts next to tax-excluded Sylius
+  prices (product price, cart unit price), so a cheaper next tier looked more expensive. Tier
+  amounts are now shown as stored, like the Sylius prices next to them, and labelled from the
+  rate of the variant in the channel default tax zone (`PriceDisplayResolver::taxConvention()`,
+  memoized per category and zone); no label when unknown (no default zone or rate). Merchants
+  of EU consumer channels must store prices with taxes.
 - "-x %" column: configurable, off by default in B2C, on in B2B; computed against the price
   of one piece, never against `originalPrice`.
 
@@ -123,7 +132,7 @@ promotion, never cumulated.
   `getReference()` by cached ids. `tmonier:tier-pricing:export` writes the same format.
 - API: `TierPriceRule` admin resource (GetCollection, Get, Post, Put, Delete; ids; IRIs of
   channels, groups, products, variants; validation group `sylius`). Shop:
-  `GET /api/v2/shop/product-variants/{code}/tier-prices` (rows with taxes as on the shop).
+  `GET /api/v2/shop/product-variants/{code}/tier-prices` (amounts as stored, `taxIncluded` true/false/null).
 - Cache: pool `cache.tmonier_tier_pricing` (tag aware, `cache.app`), key per channel, product
   and group, tags product / channel / group / all; Doctrine `onFlush`/`postFlush` listener
   invalidates the products of changed rules (old and new product); import invalidates all;
@@ -137,7 +146,9 @@ promotion, never cumulated.
 | Percentage rounding | Half up on cents (unit price), before multiplying by the quantity. |
 | Group targeting vs RFQ group discounts | Kept separate (memo §3). |
 | Catalog promotion stacking | Best of only (v1). |
-| Taxes in display | Channel default tax zone, not the customer address (documented limitation). |
+| Taxes in display | As stored + label from the channel default tax zone (documented limitation). |
+| Core display of catalog promotions | Unchanged: Sylius strikes `originalPrice` through; merchants keep it equal to the 30-day lowest price or override the templates (README, Legal notes). |
+| Multi-node cache | Pool on `cache.app`: must be shared (Redis) with several nodes, or `cache_ttl: 0` (README). |
 
 Not verified: tiers in Sylius Plus price lists (closed docs); primary text of 2021/C 526/02;
 possible Brille24 release for 2.2 (the lasting gap is 2.3 / Symfony 8). The CI matrix (Sylius

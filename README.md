@@ -19,11 +19,11 @@ and open source.
 |---|---|
 | Lower the unit price from a quantity | **Rules**: from `N` pieces (N >= 2), a **fixed unit price** or a **percentage off** the regular price, per channel, optionally for one **customer group**, with optional start and end dates. |
 | Target what you sell | A rule applies to **one variant** or to **every variant of a product**. The threshold counts the cart line, or **every variant of the product** (mix and match: 6 red + 4 blue = 10). |
-| Predictable results | The most specific rule wins: variant over product, then customer group over everybody, then the highest threshold reached. |
+| Predictable results | Among the rules that apply to the customer and the quantities, the **lowest unit price wins** (specificity only breaks ties): the price never goes up with the quantity, and the table shows exactly what the cart charges. |
 | Correct carts | An order processor (priority 44) changes the unit price of the cart line; cart promotions, shipping and taxes are computed on it. Locked (immutable) lines, e.g. negotiated quote lines, are left untouched. |
 | No double discount | With a catalog promotion, the customer gets the **best of** the tier price and the promotion price (a percentage is computed on the regular price). The channel pricing minimum price is a floor. |
 | Show the prices | **Tier table** on the product page (re-rendered when the variant changes), **"add 3 more to pay 8.00 € per piece"** nudges on the product page and in the cart, "volume price from 10 pieces" on cart lines. |
-| Stay on the right side of price rules | Tiers are shown as conditional prices: no struck-through price, no "-x %" in consumer channels by default, prices with taxes in consumer channels (see [Legal notes](#legal-notes)). |
+| Stay on the right side of price rules | Tiers are shown as conditional prices: no struck-through price (also in the shop API: `originalUnitPrice` of a tier line is the tier price in consumer channels), no "-x %" in consumer channels by default, amounts in the tax convention of the Sylius prices next to them, labelled (see [Legal notes](#legal-notes)). |
 | Manage the rules | Admin grid (*Catalog > Volume pricing*), rule form, **Volume pricing tab** on the product page. |
 | Bulk changes | `tmonier:tier-pricing:import` / `:export` (CSV, upsert or replace, dry run, all or nothing). |
 | Headless | Admin API CRUD `/api/v2/admin/tier-price-rules`, shop API `GET /api/v2/shop/product-variants/{code}/tier-prices`. |
@@ -31,14 +31,6 @@ and open source.
 Also included: translations in English, French, German, Spanish, Italian, Dutch and Polish;
 Twig Hooks everywhere; tagged cache per product, channel and customer group; demo fixture;
 MySQL, MariaDB and PostgreSQL support.
-
-## Screenshots
-
-![Product page](docs/images/shop-product-tier-table.png)
-
-![Cart](docs/images/shop-cart-tier.png)
-
-![Admin rules](docs/images/admin-tier-price-rules.png)
 
 ## Requirements
 
@@ -92,18 +84,43 @@ affected by GHSA-2rv4-pjmm-7fxf and GHSA-vv4h-q2x8-74g4 (payment requests).
 ```yaml
 # config/packages/tmonier_sylius_tier_pricing.yaml
 tmonier_sylius_tier_pricing:
-    b2b_channels: []        # channel codes shown without taxes (every other channel: with taxes)
+    b2b_channels: []        # business channel codes (only changes the defaults below)
     percentage_column:      # "-x %" column of the tier table
         b2c: false
         b2b: true
     product_page: true      # tier table and nudge on product pages
     cart: true              # tier applied and next tier in the cart
+    group_prices_for_guests: false  # customer group rules for guest checkouts too (see below)
     cache_ttl: 3600         # cached rules per product (0 = no cache); saving a rule invalidates them
 ```
 
+**Customer group rules** apply to orders of a signed-in customer only. At a guest checkout,
+Sylius attaches an existing customer (without shop account, common for B2B customers created
+in the admin) to the order from the e-mail typed by the visitor: anyone knowing that e-mail
+would get the group prices. Set `group_prices_for_guests: true` to apply them anyway.
+
+**Taxes.** Sylius has no "prices with / without taxes" setting per channel: a channel price
+includes the tax or not depending on the tax rate (`includedInPrice`) of the variant. Tier
+amounts are shown as stored, in the same convention as the Sylius product price and cart unit
+price next to them, with an "including / excluding taxes" label taken from the rate of the
+variant in the channel default tax zone (no label when it is unknown: no default tax zone, no
+rate). Consumer channels in the EU should store prices with taxes (rates `includedInPrice`).
+
 The rules of a product are cached in the `cache.tmonier_tier_pricing` pool (tags: product,
 channel, customer group; adapter `cache.app` by default). Any rule saved through Doctrine
-(admin, API, import) invalidates its product.
+(admin, API, import) invalidates its product **in that pool**. With several web or worker
+nodes, `cache.app` must be shared (e.g. Redis), or configure the pool on a shared tag-aware
+adapter, or set `cache_ttl: 0`: with a local filesystem cache, the other nodes keep the old
+rules until `cache_ttl` expires.
+
+```yaml
+framework:
+    cache:
+        pools:
+            cache.tmonier_tier_pricing:
+                adapter: cache.adapter.redis_tag_aware
+                provider: '%env(REDIS_URL)%'
+```
 
 ### Rules
 
@@ -114,8 +131,8 @@ channel, customer group; adapter `cache.app` by default). Any rule saved through
 | Applies to | `product` (every variant) or `variant` |
 | Quantity counted | `line` (the variant) or `product` (every variant of the product, mix and match) |
 | From quantity | 2 to 1,000,000 |
-| Price | `percentage_off` (of the regular price, before catalog promotions) or `fixed_unit_price` (same tax convention as the channel prices) |
-| Enabled, starts at, ends at | the end is excluded |
+| Price | `percentage_off` (of the regular price, before catalog promotions) or `fixed_unit_price` (same tax convention as the channel prices, at most 10,000,000.00) |
+| Enabled, starts at, ends at | the end is excluded; dates are stored in the PHP default timezone (UTC recommended, as for Sylius), a date given with another offset keeps its instant |
 
 One rule per channel, customer group, target and threshold over a period: checked by the
 application (a unique index would treat the "everybody" rules as distinct on MySQL, MariaDB
@@ -136,6 +153,10 @@ FASHION_WEB,wholesale,variant,,Everyday_white_basic_T_Shirt-variant-0,line,50,fi
 ```
 
 `value` is an amount (`6.40`) for a fixed price and a percentage (`7.5`) for a percentage off.
+`enabled` is `1`, `true`, `yes`, `0`, `false`, `no` or empty (enabled); anything else is an
+error. Dates are ISO 8601; their offset is kept (converted to the application timezone). A
+leading UTF-8 byte order mark (Excel "CSV UTF-8") is ignored. Two lines for the same rule are
+reported (`duplicate of line N`).
 `upsert` updates the rule with the same channel, group, target, threshold and dates, or creates
 it; `replace` deletes every rule (of `--channel`) first. The whole file runs in one transaction:
 one invalid line and nothing is saved (every error is listed with its line number). The entity
@@ -158,7 +179,7 @@ count in the quantity of their product).
 
 Templates can be overridden in `templates/bundles/TmonierSyliusTierPricingPlugin/`. Twig
 functions: `tmonier_tier_pricing_table(variant)`, `tmonier_tier_pricing_cart_table(item)`,
-`tmonier_tier_pricing_display_amount(variant, amount)`, `tmonier_tier_pricing_item_tier(item)`.
+`tmonier_tier_pricing_tax_convention(variant)`, `tmonier_tier_pricing_item_tier(item)`.
 In PHP, `TierPriceCalculatorInterface::quote()` / `table()` give the tier price of a variant for
 given quantities.
 
@@ -169,9 +190,15 @@ given quantities.
   [tmonier/sylius-quote-request-plugin](https://github.com/thibmonier/sylius-quote-request-plugin)
   runs at 45; the tier processor at **44**; then shipping (40, 30), promotions (20), taxes (10).
 - For each mutable, non-exempt line: rules of the product for the channel and the customer
-  group of the order, resolved for the line quantity and the product quantity (mutable lines
-  only). Price = fixed price, or regular price minus the percentage, rounded half up, at least
-  the channel pricing minimum price, at most the current price.
+  group of the order (signed-in customers only by default), applicable for the line quantity
+  and the product quantity (mutable, non-exempt lines only). Each rule gives a price: fixed
+  price, or regular price minus the percentage, rounded half up, at least the channel pricing
+  minimum price, at most the current price. The **lowest** price wins; ties go to the most
+  specific rule (variant, then customer group, then highest threshold), then to the oldest.
+  The product table is computed with the same function for each threshold.
+- In consumer channels the original unit price of a tier line is set to the tier price, so that
+  neither the cart nor a headless front using the shop API (`originalUnitPrice > unitPrice`)
+  shows the regular price struck through. Business channels keep the regular price there.
 - The line gets a **neutral** `tmonier_tier_price` adjustment (no effect on totals) with the
   rule id, threshold and price without tier: the order keeps a record of the tier applied.
 - `ChannelPricing` is never written: the price history used for the "lowest price before the
@@ -188,13 +215,18 @@ the EU.*
   Directive 98/6/EC (Omnibus Directive 2019/2161), an announced **price reduction** must be
   computed from the lowest price of the last 30 days. A quantity tier is a **conditional price**
   ("9.00 € from 10 pieces"), not a reduction of the price: the plugin shows it that way, does
-  not strike the regular price through for a tier, and hides the "-x %" column in consumer
-  channels by default (it compares with the price of one piece, not with a previous price).
-- Reductions that the plugin does not create (catalog promotions) keep the Sylius display,
-  which uses the lowest price before the discount, not `originalPrice`.
-- Consumer prices must include taxes: tier prices are shown with taxes in every channel not
-  listed in `b2b_channels`, computed with the tax rate of the variant in the channel default
-  tax zone.
+  not strike the regular price through for a tier (shop pages and shop API), and hides the
+  "-x %" column in consumer channels by default (it compares with the price of one piece, not
+  with a previous price).
+- Reductions the plugin does not create keep the **core Sylius display**, which is not
+  changed by this plugin: during a catalog promotion (or with a manual "compare at" price), the
+  product page and the cart strike `ChannelPricing.originalPrice` through, and the product page
+  shows the lowest price of the last 30 days on a separate line. For B2C compliance, keep
+  `originalPrice` equal to the lowest price of the last 30 days, or override those core
+  templates. When a tier price wins over a catalog promotion, no struck-through price is shown.
+- Consumer prices must include taxes: store consumer channel prices with taxes (tax rates
+  `includedInPrice`). Tier amounts follow the convention of the channel prices and are labelled
+  accordingly; no "including taxes" label is shown when the convention cannot be determined.
 
 ## Limitations
 
@@ -206,23 +238,35 @@ the EU.*
 - A percentage applies to `originalPrice` when a catalog promotion is applied; if the merchant
   also uses `originalPrice` as a manual "compare at" price, the base of the percentage is that
   price (the best-of rule still caps the result at the promotion price).
-- The display helper uses the default tax zone of the channel, not the customer's address.
-- Exempt lines still count in the quantities shown by the cart nudge.
+- The tax label uses the default tax zone of the channel, not the customer's address.
+- The admin grid loads product names once per product (translations are not joined).
 - Tier prices in Sylius Plus price lists and the Elesto Advanced Pricing Engine are not
   supported or tested.
 
 ## Development
 
 ```bash
-docker compose up -d mysql mailhog   # host ports in compose.override.yml
+docker compose up -d mysql mailhog   # empty root password; host ports in compose.override.yml
 composer install
 (cd vendor/sylius/test-application && yarn install && yarn build)
 vendor/bin/console doctrine:database:create
 vendor/bin/console doctrine:migrations:migrate -n
 vendor/bin/console sylius:fixtures:load -n     # includes demo tier rules
+```
+
+The functional and integration tests need a **test database with the Sylius fixtures** (admin
+`sylius`, `shop@example.com`, a channel with hostname `localhost` and a default tax zone).
+`tests/TestApplication/.env.test` uses the CI credentials (`root:root`); with the local Docker
+MySQL, override it in `tests/TestApplication/.env.test.local`:
+
+```bash
+echo 'DATABASE_URL=mysql://root@127.0.0.1:3306/tmonier_sylius_tier_pricing_%kernel.environment%' > tests/TestApplication/.env.test.local
+APP_ENV=test vendor/bin/console doctrine:database:create
+APP_ENV=test vendor/bin/console doctrine:migrations:migrate -n
+APP_ENV=test vendor/bin/console sylius:fixtures:load -n
 
 vendor/bin/phpunit --testsuite unit
-APP_ENV=test vendor/bin/phpunit --testsuite non-unit   # needs a test database with fixtures
+APP_ENV=test vendor/bin/phpunit --testsuite non-unit
 vendor/bin/phpstan analyse
 vendor/bin/ecs check
 ```

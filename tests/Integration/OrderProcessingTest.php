@@ -171,6 +171,19 @@ final class OrderProcessingTest extends KernelTestCase
         self::assertSame(1000, $tier->getOriginalUnitPrice());
     }
 
+    public function testABusinessChannelKeepsTheRegularPriceAsOriginalPrice(): void
+    {
+        $channel = $this->catalog()->businessChannel();
+        $product = $this->catalog()->product($channel, [1000]);
+        $variant = $this->catalog()->variant($product);
+        $this->catalog()->rule($channel, $product, 10, TierPriceRuleInterface::TYPE_FIXED_UNIT_PRICE, 900);
+
+        $item = $this->catalog()->item($this->catalog()->cart($channel, [[$variant, 10]], flush: false), $variant);
+
+        self::assertSame(900, $item->getUnitPrice());
+        self::assertSame(1000, $item->getOriginalUnitPrice());
+    }
+
     public function testMixAndMatchCountsEveryVariantOfTheProduct(): void
     {
         $channel = $this->catalog()->channel();

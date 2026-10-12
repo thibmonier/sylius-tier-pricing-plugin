@@ -32,7 +32,7 @@ server: `symfony server:start -d --port=8092 --no-tls` (admin `sylius` / `sylius
 
 - `src/Entity/TierPriceRule` (Sylius resource, XML mapped superclass in `config/doctrine`,
   migrations in `src/Migrations`: Schema API table + plain SQL CHECK on scope/target).
-- `Pricing/TierPriceResolver`: pure (no DB, no clock); `TierPriceRuleData` / `TierPriceContext`
+- `Pricing/TierPriceResolver`: pure (no DB, no clock), lowest price wins among applicable rules (specificity breaks ties); `TierPriceRuleData` / `TierPriceContext`
   value objects. `Pricing/CachedTierPriceRuleProvider`: rules per channel/product/group from
   `Repository/TierPriceRuleRepository::findCandidateData()`, tag-aware pool
   `cache.tmonier_tier_pricing` + memo (kernel.reset). `EventListener/TierPriceCacheInvalidator`
@@ -43,15 +43,19 @@ server: `symfony server:start -d --port=8092 --no-tls` (admin `sylius` / `sylius
   the quote lock at 45 of tmonier/sylius-quote-request-plugin), skips immutable and exempt
   lines (`TierPriceExemptionCheckerInterface`, composite), neutral `tmonier_tier_price`
   adjustment as marker. Never writes `ChannelPricing`.
-- Display: `Twig/TierPricingExtension` (table, cart table, display amount, b2b, percentage),
-  `Pricing/PriceDisplayResolver` (taxes per `b2b_channels`), `Twig/OrderItemOriginalPriceToDisplayExtension`
+- Group rules: `Pricing/OrderCustomerGroupResolver` (signed-in customers only unless
+  `group_prices_for_guests`). In consumer channels the processor also sets `originalUnitPrice`
+  of tier lines to the tier price (shop API shows no reduction).
+- Display: `Twig/TierPricingExtension` (table, cart table, tax convention, percentage; skips
+  exempt lines), `Pricing/PriceDisplayResolver` (tax convention label, amounts shown as stored;
+  `b2b_channels` only drives the percentage column default), `Twig/OrderItemOriginalPriceToDisplayExtension`
   decorates the core function (no struck-through price for tiers). Hooks in `config/twig_hooks`.
 - Admin: resource routes `config/routes/admin.yaml` (hook prefix
   `tmonier_tier_pricing_admin.tier_price_rule`), grid `config/grids`, `Form/Type/TierPriceRuleType`
   (value entered as `percentage` or `amount`, unmapped), `Factory/TierPriceRuleFactory`
   (`createForProduct` for the product tab), validation `config/validation` +
   `Validator/ValidTierPriceRule` (target, value, dates, uniqueness with NULL groups).
-- CSV: `Csv/TierPriceRuleCsvImporter` (one transaction, flush per line, clear every 500) and
+- CSV: `Csv/TierPriceRuleCsvImporter` (one transaction, flush per line, clear every 500, BOM, strict `enabled`, duplicate lines reported, offsets kept) and
   exporter, commands in `src/Command`.
 - API: `config/api_platform` (admin `TierPriceRule` CRUD, shop `TierPriceTableView` read model
   with `Api/TierPriceTableProvider`), groups in `config/serialization`.
@@ -59,6 +63,9 @@ server: `symfony server:start -d --port=8092 --no-tls` (admin `sylius` / `sylius
 ## Rules
 
 - No core entity change: plugin table only.
+- Test application: `tests/TestApplication/config/exemption.php` exempts variants whose code
+  ends with `_exempt`; `TestCatalog::businessChannel()` creates the `TMONIER_B2B` channel
+  (host `b2b.tmonier.test`, listed in `b2b_channels`).
 - Tests never depend on random fixtures: `tests/TestCatalog.php` creates products, rules,
   groups, tax rates and carts inside the rolled-back transaction (`TierPricingTestTrait`);
   carts of a logged-in customer use `setCustomerWithAuthorization()` (else the cart context
@@ -67,5 +74,6 @@ server: `symfony server:start -d --port=8092 --no-tls` (admin `sylius` / `sylius
   nl, pl (`TranslationsTest` also checks keys used in src/templates/config). Clear the cache
   (dev and test) after adding a translation file.
 - Legal display rules (B2C): no struck-through price and no "-x %" for a tier by default,
-  prices with taxes. Keep them when changing templates (see README, Legal notes).
+  tier amounts in the tax convention of the Sylius prices next to them, labelled only when known.
+  Keep them when changing templates (see README, Legal notes).
 - Admin forms use `@SyliusAdmin/shared/form_theme.html.twig` (through the CRUD templates).
