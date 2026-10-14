@@ -33,6 +33,16 @@ Also included: translations in English, French, German, Spanish, Italian, Dutch 
 Twig Hooks everywhere; tagged cache per product, channel and customer group; demo fixture;
 MySQL, MariaDB and PostgreSQL support.
 
+## Screenshots
+
+![Volume prices table on the product page, with the mix and match tier marked](docs/images/shop-product-tier-table.jpg)
+
+![Cart with volume prices: two sizes of a T-shirt counted together (from 12 pieces) and two caps counted together through their category (from 10 pieces), with the "add 19 more" nudge](docs/images/shop-cart-volume-prices.jpg)
+
+![Volume pricing tab of the product form in the back office: price breaks per customer group, mix and match and a fixed price on one variant, with the precedence warning over the category rules](docs/images/admin-product-volume-pricing.jpg)
+
+![Tier price rule form: 15 % off every product of the Caps taxon from 10 pieces, counted across the taxon, best of the tier price and the catalog promotion price](docs/images/admin-tier-price-rule-taxon.jpg)
+
 ## Requirements
 
 | | Version |
