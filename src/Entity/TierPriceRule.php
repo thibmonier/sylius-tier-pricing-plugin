@@ -186,7 +186,7 @@ class TierPriceRule implements TierPriceRuleInterface
 
     public function setStartsAt(?\DateTimeInterface $startsAt): void
     {
-        $this->startsAt = self::inApplicationTimezone($startsAt);
+        $this->startsAt = $this->inApplicationTimezone($startsAt);
     }
 
     public function getEndsAt(): ?\DateTimeInterface
@@ -196,7 +196,7 @@ class TierPriceRule implements TierPriceRuleInterface
 
     public function setEndsAt(?\DateTimeInterface $endsAt): void
     {
-        $this->endsAt = self::inApplicationTimezone($endsAt);
+        $this->endsAt = $this->inApplicationTimezone($endsAt);
     }
 
     /**
@@ -204,9 +204,9 @@ class TierPriceRule implements TierPriceRuleInterface
      * default timezone: a date given with another offset (CSV, API) is converted first, so that
      * it keeps its instant.
      */
-    private static function inApplicationTimezone(?\DateTimeInterface $date): ?\DateTimeInterface
+    private function inApplicationTimezone(?\DateTimeInterface $date): ?\DateTimeInterface
     {
-        if (null === $date) {
+        if (!$date instanceof \DateTimeInterface) {
             return null;
         }
         $timezone = date_default_timezone_get();

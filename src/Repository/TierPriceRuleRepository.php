@@ -33,7 +33,7 @@ class TierPriceRuleRepository extends EntityRepository implements TierPriceRuleR
             ->setParameter('product', $product)
             ->orderBy('o.id', 'ASC')
         ;
-        if (null === $customerGroup) {
+        if (!$customerGroup instanceof \Sylius\Component\Customer\Model\CustomerGroupInterface) {
             $queryBuilder->andWhere('o.customerGroup IS NULL');
         } else {
             $queryBuilder->andWhere('o.customerGroup IS NULL OR o.customerGroup = :customerGroup')->setParameter('customerGroup', $customerGroup);
@@ -70,7 +70,7 @@ class TierPriceRuleRepository extends EntityRepository implements TierPriceRuleR
         ;
         // NULL never equals NULL in SQL (nor in a unique index on MySQL, MariaDB and PostgreSQL
         // < 15): the "everybody" rules are compared with IS NULL.
-        if (null === $rule->getCustomerGroup()) {
+        if (!$rule->getCustomerGroup() instanceof \Sylius\Component\Customer\Model\CustomerGroupInterface) {
             $queryBuilder->andWhere('o.customerGroup IS NULL');
         } else {
             $queryBuilder->andWhere('o.customerGroup = :customerGroup')->setParameter('customerGroup', $rule->getCustomerGroup());
@@ -86,10 +86,10 @@ class TierPriceRuleRepository extends EntityRepository implements TierPriceRuleR
             $queryBuilder->andWhere('o.id <> :id')->setParameter('id', $rule->getId());
         }
         // Date ranges [startsAt, endsAt) overlap; null = open.
-        if (null !== $rule->getEndsAt()) {
+        if ($rule->getEndsAt() instanceof \DateTimeInterface) {
             $queryBuilder->andWhere('o.startsAt IS NULL OR o.startsAt < :endsAt')->setParameter('endsAt', $rule->getEndsAt());
         }
-        if (null !== $rule->getStartsAt()) {
+        if ($rule->getStartsAt() instanceof \DateTimeInterface) {
             $queryBuilder->andWhere('o.endsAt IS NULL OR o.endsAt > :startsAt')->setParameter('startsAt', $rule->getStartsAt());
         }
 

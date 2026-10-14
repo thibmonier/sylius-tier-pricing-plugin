@@ -40,7 +40,7 @@ final class RuleCacheTest extends KernelTestCase
 
         $first->setValue(900);
         $this->entityManager()->flush();
-        $values = array_map(static fn ($rule): int => $rule->value, $this->provider()->getRules($channel, $product, null));
+        $values = array_map(static fn (\Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceRuleData $rule): int => $rule->value, $this->provider()->getRules($channel, $product, null));
         self::assertContains(900, $values);
 
         // Moved to another product: both products are invalidated.

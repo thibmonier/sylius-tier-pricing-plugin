@@ -25,7 +25,7 @@ final class OrderItemOriginalPriceToDisplayExtension extends AbstractExtension
     public function getFunctions(): array
     {
         return [
-            new TwigFunction('sylius_order_item_original_price_to_display', [$this, 'getOriginalPriceToDisplay']),
+            new TwigFunction('sylius_order_item_original_price_to_display', $this->getOriginalPriceToDisplay(...)),
         ];
     }
 

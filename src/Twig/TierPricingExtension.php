@@ -66,7 +66,7 @@ final class TierPricingExtension extends AbstractExtension
             return null;
         }
         $channel = $this->channel();
-        if (null === $variant || null === $channel) {
+        if (!$variant instanceof \Sylius\Component\Core\Model\ProductVariantInterface || !$channel instanceof \Sylius\Component\Core\Model\ChannelInterface) {
             return null;
         }
 
@@ -82,11 +82,11 @@ final class TierPricingExtension extends AbstractExtension
         $order = $item->getOrder();
         $variant = $item->getVariant();
         // Same lines as the order processor: immutable and exempt lines get no tier price.
-        if (!$this->cart || !$order instanceof OrderInterface || null === $variant || $item->isImmutable() || $this->exemptionChecker->isExempt($item)) {
+        if (!$this->cart || !$order instanceof OrderInterface || !$variant instanceof \Sylius\Component\Core\Model\ProductVariantInterface || $item->isImmutable() || $this->exemptionChecker->isExempt($item)) {
             return null;
         }
         $channel = $order->getChannel();
-        if (null === $channel) {
+        if (!$channel instanceof \Sylius\Component\Channel\Model\ChannelInterface) {
             return null;
         }
 
@@ -101,21 +101,21 @@ final class TierPricingExtension extends AbstractExtension
     {
         $channel = $this->channel();
 
-        return null === $channel ? null : $this->displayResolver->taxConvention($variant, $channel);
+        return $channel instanceof \Sylius\Component\Core\Model\ChannelInterface ? $this->displayResolver->taxConvention($variant, $channel) : null;
     }
 
     public function isBusinessChannel(): bool
     {
         $channel = $this->channel();
 
-        return null !== $channel && $this->displayResolver->isBusinessChannel($channel);
+        return $channel instanceof \Sylius\Component\Core\Model\ChannelInterface && $this->displayResolver->isBusinessChannel($channel);
     }
 
     public function showsPercentage(): bool
     {
         $channel = $this->channel();
 
-        return null !== $channel && $this->displayResolver->showsPercentage($channel);
+        return $channel instanceof \Sylius\Component\Core\Model\ChannelInterface && $this->displayResolver->showsPercentage($channel);
     }
 
     /**
@@ -146,7 +146,7 @@ final class TierPricingExtension extends AbstractExtension
      */
     public function maskedTaxonThresholds(?ProductInterface $product, ?string $channelCode = null): array
     {
-        if (null === $product || null === $product->getId()) {
+        if (!$product instanceof \Sylius\Component\Core\Model\ProductInterface || null === $product->getId()) {
             return [];
         }
 
@@ -188,7 +188,7 @@ final class TierPricingExtension extends AbstractExtension
             if ($item->getVariant() === $variant) {
                 $lineQuantity += $item->getQuantity();
             }
-            if (null !== $variant->getProduct() && $item->getVariant()?->getProduct() === $variant->getProduct()) {
+            if ($variant->getProduct() instanceof \Sylius\Component\Product\Model\ProductInterface && $item->getVariant()?->getProduct() === $variant->getProduct()) {
                 $productQuantity += $item->getQuantity();
             }
         }

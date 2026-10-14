@@ -6,10 +6,10 @@ namespace Tmonier\SyliusTierPricingPlugin\OrderProcessing;
 
 use Sylius\Component\Core\Model\OrderItemInterface;
 
-final class CompositeTierPriceExemptionChecker implements TierPriceExemptionCheckerInterface
+final readonly class CompositeTierPriceExemptionChecker implements TierPriceExemptionCheckerInterface
 {
     /** @param iterable<TierPriceExemptionCheckerInterface> $checkers */
-    public function __construct(private readonly iterable $checkers)
+    public function __construct(private iterable $checkers)
     {
     }
 

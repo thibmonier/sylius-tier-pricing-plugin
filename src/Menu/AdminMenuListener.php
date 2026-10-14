@@ -11,7 +11,7 @@ final class AdminMenuListener
     public function __invoke(MenuBuilderEvent $event): void
     {
         $catalog = $event->getMenu()->getChild('catalog');
-        if (null === $catalog) {
+        if (!$catalog instanceof \Knp\Menu\ItemInterface) {
             return;
         }
 

@@ -13,13 +13,13 @@ use Sylius\Component\Core\Model\ProductVariantInterface;
 use Sylius\Component\Customer\Model\CustomerGroupInterface;
 use Tmonier\SyliusTierPricingPlugin\Entity\TierPriceRuleInterface;
 
-final class TierPriceCalculator implements TierPriceCalculatorInterface
+final readonly class TierPriceCalculator implements TierPriceCalculatorInterface
 {
     public function __construct(
-        private readonly TierPriceRuleProviderInterface $ruleProvider,
-        private readonly TierPriceResolverInterface $resolver,
-        private readonly ProductVariantPricesCalculatorInterface $pricesCalculator,
-        private readonly ClockInterface $clock,
+        private TierPriceRuleProviderInterface $ruleProvider,
+        private TierPriceResolverInterface $resolver,
+        private ProductVariantPricesCalculatorInterface $pricesCalculator,
+        private ClockInterface $clock,
     ) {
     }
 
@@ -54,7 +54,7 @@ final class TierPriceCalculator implements TierPriceCalculatorInterface
         $lastPrice = $unitPrice;
         foreach (array_keys($thresholds) as $threshold) {
             $quote = $this->quoteFor($rules, $this->context($variant, $customerGroup, $threshold, $threshold), $variant, $channel, null);
-            if (null === $quote || $quote->unitPrice >= $lastPrice) {
+            if (!$quote instanceof \Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceQuote || $quote->unitPrice >= $lastPrice) {
                 continue;
             }
             $rows[] = new TierPriceRow(
@@ -91,10 +91,10 @@ final class TierPriceCalculator implements TierPriceCalculatorInterface
                 continue;
             }
             $quote = $this->quoteFor($rules, $current->withAddedQuantity($toAdd), $variant, $channel, null);
-            if (null === $quote || $quote->unitPrice >= $currentUnitPrice) {
+            if (!$quote instanceof \Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceQuote || $quote->unitPrice >= $currentUnitPrice) {
                 continue;
             }
-            if (null === $best || $toAdd < $best->quantityToAdd || ($toAdd === $best->quantityToAdd && $quote->unitPrice < $best->unitPrice)) {
+            if (!$best instanceof \Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceNudge || $toAdd < $best->quantityToAdd || ($toAdd === $best->quantityToAdd && $quote->unitPrice < $best->unitPrice)) {
                 $best = new TierPriceNudge($toAdd, $quote->unitPrice, $quote->rule->minQuantity, TierPriceRuleInterface::BASIS_PRODUCT === $quote->rule->quantityBasis);
             }
         }
@@ -112,7 +112,7 @@ final class TierPriceCalculator implements TierPriceCalculatorInterface
         $currentPrice ??= $prices['current'];
         $context = $context->withPromoted($prices['promoted']);
         $rule = $this->resolver->resolve($rules, $context, $prices['base'], $currentPrice, $prices['minimum']);
-        if (null === $rule) {
+        if (!$rule instanceof \Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceRuleData) {
             return null;
         }
 
@@ -148,7 +148,7 @@ final class TierPriceCalculator implements TierPriceCalculatorInterface
     private function catalogPrices(ProductVariantInterface $variant, ChannelInterface $channel): ?array
     {
         $channelPricing = $variant->getChannelPricingForChannel($channel);
-        if (null === $channelPricing) {
+        if (!$channelPricing instanceof \Sylius\Component\Core\Model\ChannelPricingInterface) {
             return null;
         }
 

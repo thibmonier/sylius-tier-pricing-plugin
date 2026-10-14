@@ -56,11 +56,11 @@ final class ValidTierPriceRuleValidator extends ConstraintValidator
                 ->addViolation()
             ;
         }
-        if (null !== $value->getStartsAt() && null !== $value->getEndsAt() && $value->getEndsAt() <= $value->getStartsAt()) {
+        if ($value->getStartsAt() instanceof \DateTimeInterface && $value->getEndsAt() instanceof \DateTimeInterface && $value->getEndsAt() <= $value->getStartsAt()) {
             $this->context->buildViolation($constraint->datesOrder)->atPath('endsAt')->addViolation();
         }
 
-        if ($valid && null !== $value->getChannel() && [] !== $this->repository->findConflicting($value)) {
+        if ($valid && $value->getChannel() instanceof \Sylius\Component\Core\Model\ChannelInterface && [] !== $this->repository->findConflicting($value)) {
             $this->context->buildViolation($constraint->duplicate)
                 ->setParameter('%quantity%', (string) $value->getMinQuantity())
                 ->atPath('minQuantity')

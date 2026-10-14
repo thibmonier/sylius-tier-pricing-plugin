@@ -18,15 +18,15 @@ use Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceCalculatorInterface;
 /**
  * @implements ProviderInterface<TierPriceTableView>
  */
-final class TierPriceTableProvider implements ProviderInterface
+final readonly class TierPriceTableProvider implements ProviderInterface
 {
     /** @param ProductVariantRepositoryInterface<ProductVariantInterface> $variantRepository */
     public function __construct(
-        private readonly ProductVariantRepositoryInterface $variantRepository,
-        private readonly TierPriceCalculatorInterface $calculator,
-        private readonly PriceDisplayResolverInterface $displayResolver,
-        private readonly ChannelContextInterface $channelContext,
-        private readonly CustomerContextInterface $customerContext,
+        private ProductVariantRepositoryInterface $variantRepository,
+        private TierPriceCalculatorInterface $calculator,
+        private PriceDisplayResolverInterface $displayResolver,
+        private ChannelContextInterface $channelContext,
+        private CustomerContextInterface $customerContext,
     ) {
     }
 

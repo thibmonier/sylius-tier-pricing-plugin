@@ -30,19 +30,19 @@ use Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceCalculatorInterface;
  * amount is the difference in business channels, 0 in consumer channels, where the shop API
  * adjustment endpoints would otherwise show it as a reduction).
  */
-final class TierPriceOrderProcessor implements OrderProcessorInterface
+final readonly class TierPriceOrderProcessor implements OrderProcessorInterface
 {
     public const ADJUSTMENT_TYPE = 'tmonier_tier_price';
 
     /** @param AdjustmentFactoryInterface<\Sylius\Component\Order\Model\AdjustmentInterface> $adjustmentFactory */
     public function __construct(
-        private readonly TierPriceCalculatorInterface $calculator,
-        private readonly TierPriceExemptionCheckerInterface $exemptionChecker,
-        private readonly AdjustmentFactoryInterface $adjustmentFactory,
-        private readonly TranslatorInterface $translator,
-        private readonly OrderCustomerGroupResolver $customerGroupResolver = new OrderCustomerGroupResolver(),
-        private readonly ?PriceDisplayResolverInterface $displayResolver = null,
-        private readonly TaxonQuantityCounter $taxonQuantityCounter = new TaxonQuantityCounter(),
+        private TierPriceCalculatorInterface $calculator,
+        private TierPriceExemptionCheckerInterface $exemptionChecker,
+        private AdjustmentFactoryInterface $adjustmentFactory,
+        private TranslatorInterface $translator,
+        private OrderCustomerGroupResolver $customerGroupResolver = new OrderCustomerGroupResolver(),
+        private ?PriceDisplayResolverInterface $displayResolver = null,
+        private TaxonQuantityCounter $taxonQuantityCounter = new TaxonQuantityCounter(),
     ) {
     }
 
@@ -52,7 +52,7 @@ final class TierPriceOrderProcessor implements OrderProcessorInterface
             return;
         }
         $channel = $order->getChannel();
-        if (null === $channel) {
+        if (!$channel instanceof \Sylius\Component\Channel\Model\ChannelInterface) {
             return;
         }
 
@@ -90,7 +90,7 @@ final class TierPriceOrderProcessor implements OrderProcessorInterface
             }
             $currentPrice = $item->getUnitPrice();
             $quote = $this->calculator->quote($variant, $channel, $customerGroup, $item->getQuantity(), $productQuantities[$productId] ?? 0, $currentPrice, $taxonQuantities);
-            if (null === $quote || !$quote->isCheaper()) {
+            if (!$quote instanceof \Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceQuote || !$quote->isCheaper()) {
                 continue;
             }
 

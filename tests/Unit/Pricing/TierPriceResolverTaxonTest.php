@@ -84,7 +84,7 @@ final class TierPriceResolverTaxonTest extends TestCase
         $last = \PHP_INT_MAX;
         for ($quantity = 1; $quantity <= 30; ++$quantity) {
             $rule = $resolver->resolve($rules, $this->context($quantity), 1000, 1000);
-            $price = null === $rule ? 1000 : $resolver->calculateUnitPrice($rule, 1000, 1000);
+            $price = $rule instanceof \Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceRuleData ? $resolver->calculateUnitPrice($rule, 1000, 1000) : 1000;
             self::assertLessThanOrEqual($last, $price, sprintf('quantity %d', $quantity));
             $last = $price;
         }

@@ -30,9 +30,9 @@ use Webmozart\Assert\Assert;
  * Data created by the tests themselves (inside their rolled-back transaction), so that no test
  * depends on the random Sylius fixtures: products, rules, groups, tax rates, carts.
  */
-final class TestCatalog
+final readonly class TestCatalog
 {
-    public function __construct(private readonly ContainerInterface $container)
+    public function __construct(private ContainerInterface $container)
     {
     }
 
@@ -190,7 +190,7 @@ final class TestCatalog
         $taxon->setFallbackLocale('en_US');
         $taxon->setName('Taxon ' . $code);
         $taxon->setSlug($code);
-        if (null !== $parent) {
+        if ($parent instanceof \Sylius\Component\Core\Model\TaxonInterface) {
             $parent->addChild($taxon);
         }
         $this->entityManager()->persist($taxon);
@@ -278,7 +278,7 @@ final class TestCatalog
         $order->setCurrencyCode((string) $channel->getBaseCurrency()?->getCode());
         // "With authorization": a signed-in customer (found by the cart context, gets group
         // prices); without customer the cart is a guest cart.
-        if (null !== $customer) {
+        if ($customer instanceof \Sylius\Component\Core\Model\CustomerInterface) {
             $order->setCustomerWithAuthorization($customer);
         }
         foreach ($lines as [$variant, $quantity]) {

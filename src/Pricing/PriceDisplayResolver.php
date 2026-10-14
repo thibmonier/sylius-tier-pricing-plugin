@@ -39,13 +39,13 @@ final class PriceDisplayResolver implements PriceDisplayResolverInterface, Reset
     {
         $zone = $channel->getDefaultTaxZone();
         $category = $variant->getTaxCategory();
-        if (null === $zone || null === $category) {
+        if (!$zone instanceof \Sylius\Component\Addressing\Model\ZoneInterface || !$category instanceof \Sylius\Component\Taxation\Model\TaxCategoryInterface) {
             return null;
         }
         $key = sprintf('%s|%s', spl_object_id($category), spl_object_id($zone));
         if (!array_key_exists($key, $this->conventions)) {
             $rate = $this->taxRateResolver->resolve($variant, ['zone' => $zone]);
-            $this->conventions[$key] = null === $rate ? null : ($rate->isIncludedInPrice() ? self::TAX_INCLUDED : self::TAX_EXCLUDED);
+            $this->conventions[$key] = $rate instanceof \Sylius\Component\Taxation\Model\TaxRateInterface ? $rate->isIncludedInPrice() ? self::TAX_INCLUDED : self::TAX_EXCLUDED : (null);
         }
 
         return $this->conventions[$key];

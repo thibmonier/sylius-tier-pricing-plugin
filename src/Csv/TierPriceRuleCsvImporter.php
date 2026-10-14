@@ -186,8 +186,8 @@ final class TierPriceRuleCsvImporter
         $cumulation = '' === $data['cumulation'] ? TierPriceRuleInterface::CUMULATION_BEST_OF : $data['cumulation'];
 
         $rule = $this->findExisting($channel, $customerGroup, $data['scope'], $product, $variant, $taxon, (int) $data['min_quantity'], $startsAt, $endsAt);
-        $isNew = null === $rule;
-        if (null !== $rule && isset($this->linesByRule[(int) $rule->getId()])) {
+        $isNew = !$rule instanceof \Tmonier\SyliusTierPricingPlugin\Entity\TierPriceRuleInterface;
+        if ($rule instanceof \Tmonier\SyliusTierPricingPlugin\Entity\TierPriceRuleInterface && isset($this->linesByRule[(int) $rule->getId()])) {
             return sprintf('duplicate of line %d', $this->linesByRule[(int) $rule->getId()]);
         }
         $rule ??= $this->factory->createNew();
