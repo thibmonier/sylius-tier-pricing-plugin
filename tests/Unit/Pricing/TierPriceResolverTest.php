@@ -71,7 +71,7 @@ final class TierPriceResolverTest extends TestCase
         $previous = 1000;
         for ($quantity = 1; $quantity <= 100; ++$quantity) {
             $rule = $this->resolve($rules, $this->context($quantity, group: self::GROUP));
-            $price = null === $rule ? 1000 : $resolver->calculateUnitPrice($rule, 1000, 1000);
+            $price = $rule instanceof \Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceRuleData ? $resolver->calculateUnitPrice($rule, 1000, 1000) : 1000;
             self::assertLessThanOrEqual($previous, $price, sprintf('quantity %d', $quantity));
             $previous = $price;
         }

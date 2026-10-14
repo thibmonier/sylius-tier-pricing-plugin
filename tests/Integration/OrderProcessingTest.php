@@ -111,7 +111,7 @@ final class OrderProcessingTest extends KernelTestCase
         /** @var \Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceCalculatorInterface $calculator */
         $calculator = self::getContainer()->get('tmonier_tier_pricing.calculator');
         $table = $calculator->table($variant, $channel, $group);
-        $rows = array_map(static fn ($row): array => [$row->minQuantity, $row->unitPrice], $table->rows);
+        $rows = array_map(static fn (\Tmonier\SyliusTierPricingPlugin\Pricing\TierPriceRow $row): array => [$row->minQuantity, $row->unitPrice], $table->rows);
         self::assertSame([[1, 1000], [10, 800], [40, 700]], $rows);
 
         $previous = \PHP_INT_MAX;
@@ -184,7 +184,7 @@ final class OrderProcessingTest extends KernelTestCase
     {
         $stack = self::getContainer()->get('request_stack');
         self::assertInstanceOf(\Symfony\Component\HttpFoundation\RequestStack::class, $stack);
-        while (null !== $stack->pop()) {
+        while ($stack->pop() instanceof \Symfony\Component\HttpFoundation\Request) {
         }
         $stack->push(\Symfony\Component\HttpFoundation\Request::create($uri));
     }

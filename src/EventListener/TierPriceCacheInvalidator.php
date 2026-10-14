@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tmonier\SyliusTierPricingPlugin\EventListener;
 
 use Doctrine\ORM\Event\OnFlushEventArgs;
-use Doctrine\ORM\Event\PostFlushEventArgs;
 use Sylius\Component\Core\Model\ProductTaxonInterface;
 use Sylius\Component\Product\Model\ProductInterface;
 use Sylius\Component\Product\Model\ProductVariantInterface;
@@ -50,7 +49,7 @@ final class TierPriceCacheInvalidator
                 continue;
             }
             $changeSet = $unitOfWork->getEntityChangeSet($entity);
-            if (null !== $entity->getTaxon() || array_key_exists('taxon', $changeSet)) {
+            if ($entity->getTaxon() instanceof \Sylius\Component\Core\Model\TaxonInterface || array_key_exists('taxon', $changeSet)) {
                 $this->all = true;
             }
             $this->remember($entity->getProduct());
@@ -65,7 +64,7 @@ final class TierPriceCacheInvalidator
         }
     }
 
-    public function postFlush(PostFlushEventArgs $args): void
+    public function postFlush(): void
     {
         if ($this->all) {
             $this->all = false;

@@ -21,25 +21,25 @@ use Sylius\Component\Customer\Model\CustomerGroupInterface;
  * (admin, admin API, console, message consumers: orders created on behalf of a customer, quote
  * conversions, imports) the group of the order's customer applies.
  */
-final class OrderCustomerGroupResolver
+final readonly class OrderCustomerGroupResolver
 {
     public function __construct(
-        private readonly ?SectionProviderInterface $sectionProvider = null,
-        private readonly ?CustomerContextInterface $customerContext = null,
-        private readonly bool $groupPricesForGuests = false,
+        private ?SectionProviderInterface $sectionProvider = null,
+        private ?CustomerContextInterface $customerContext = null,
+        private bool $groupPricesForGuests = false,
     ) {
     }
 
     public function resolve(OrderInterface $order): ?CustomerGroupInterface
     {
         $customer = $order->getCustomer();
-        if (null === $customer || $this->groupPricesForGuests || !$this->isShopRequest()) {
+        if (!$customer instanceof \Sylius\Component\Customer\Model\CustomerInterface || $this->groupPricesForGuests || !$this->isShopRequest()) {
             return $customer?->getGroup();
         }
 
         $signedIn = $this->customerContext?->getCustomer();
 
-        return null !== $signedIn && $signedIn === $customer ? $customer->getGroup() : null;
+        return $signedIn instanceof \Sylius\Component\Customer\Model\CustomerInterface && $signedIn === $customer ? $customer->getGroup() : null;
     }
 
     private function isShopRequest(): bool

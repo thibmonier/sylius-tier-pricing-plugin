@@ -10,7 +10,7 @@ use Tmonier\SyliusTierPricingPlugin\Entity\TierPriceRuleInterface;
  * Immutable copy of an enabled rule, as cached and read by the resolver (no Doctrine entity in
  * the cache, no lazy loading during the price calculation).
  */
-final class TierPriceRuleData
+final readonly class TierPriceRuleData
 {
     /**
      * @param int|null $variantId null for a product-wide or taxon rule
@@ -18,18 +18,18 @@ final class TierPriceRuleData
      * @param int|null $taxonLevel depth of that taxon (0 for a root): the deepest taxon wins
      */
     public function __construct(
-        public readonly int $id,
-        public readonly ?int $variantId,
-        public readonly ?int $customerGroupId,
-        public readonly string $quantityBasis,
-        public readonly int $minQuantity,
-        public readonly string $type,
-        public readonly int $value,
-        public readonly ?\DateTimeImmutable $startsAt = null,
-        public readonly ?\DateTimeImmutable $endsAt = null,
-        public readonly ?int $taxonId = null,
-        public readonly ?int $taxonLevel = null,
-        public readonly string $cumulation = TierPriceRuleInterface::CUMULATION_BEST_OF,
+        public int $id,
+        public ?int $variantId,
+        public ?int $customerGroupId,
+        public string $quantityBasis,
+        public int $minQuantity,
+        public string $type,
+        public int $value,
+        public ?\DateTimeImmutable $startsAt = null,
+        public ?\DateTimeImmutable $endsAt = null,
+        public ?int $taxonId = null,
+        public ?int $taxonLevel = null,
+        public string $cumulation = TierPriceRuleInterface::CUMULATION_BEST_OF,
     ) {
     }
 
@@ -48,10 +48,10 @@ final class TierPriceRuleData
             $rule->getMinQuantity(),
             $rule->getType(),
             $rule->getValue(),
-            null === $rule->getStartsAt() ? null : \DateTimeImmutable::createFromInterface($rule->getStartsAt()),
-            null === $rule->getEndsAt() ? null : \DateTimeImmutable::createFromInterface($rule->getEndsAt()),
+            $rule->getStartsAt() instanceof \DateTimeInterface ? \DateTimeImmutable::createFromInterface($rule->getStartsAt()) : null,
+            $rule->getEndsAt() instanceof \DateTimeInterface ? \DateTimeImmutable::createFromInterface($rule->getEndsAt()) : null,
             is_int($taxonId) ? $taxonId : null,
-            null === $taxon ? null : $taxon->getLevel(),
+            $taxon?->getLevel(),
             $rule->getCumulation(),
         );
     }
@@ -68,6 +68,6 @@ final class TierPriceRuleData
 
     public function isActiveAt(\DateTimeInterface $now): bool
     {
-        return (null === $this->startsAt || $this->startsAt <= $now) && (null === $this->endsAt || $this->endsAt > $now);
+        return (!$this->startsAt instanceof \DateTimeImmutable || $this->startsAt <= $now) && (!$this->endsAt instanceof \DateTimeImmutable || $this->endsAt > $now);
     }
 }

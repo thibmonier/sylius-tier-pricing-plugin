@@ -9,7 +9,7 @@ namespace Tmonier\SyliusTierPricingPlugin\Api;
  * as stored in the channel base currency (cents), like the variant price; `taxIncluded` tells
  * the convention of the variant tax rate in the channel default zone (null when unknown).
  */
-final class TierPriceTableView
+final readonly class TierPriceTableView
 {
     /**
      * `mixAndMatch`: every variant of the product counts; `taxonBasis`: every product of the
@@ -18,10 +18,10 @@ final class TierPriceTableView
      * @param list<array{minQuantity: int, unitPrice: int, mixAndMatch: bool, taxonBasis: bool}> $tiers
      */
     public function __construct(
-        public readonly string $code,
-        public readonly string $currencyCode,
-        public readonly ?bool $taxIncluded,
-        public readonly array $tiers,
+        public string $code,
+        public string $currencyCode,
+        public ?bool $taxIncluded,
+        public array $tiers,
     ) {
     }
 }

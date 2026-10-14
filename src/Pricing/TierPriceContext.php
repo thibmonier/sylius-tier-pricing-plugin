@@ -11,22 +11,22 @@ use Tmonier\SyliusTierPricingPlugin\Entity\TierPriceRuleInterface;
  * page): the variant, the customer group, the quantities a rule can count and whether the
  * variant has a catalog promotion.
  */
-final class TierPriceContext
+final readonly class TierPriceContext
 {
     /**
      * @param array<int, int>|null $taxonQuantities quantity of the lines of each taxon (products in the taxon or its children), by taxon id; null: unknown (simulated quantity), the product quantity is used
      */
     public function __construct(
-        public readonly int $variantId,
-        public readonly ?int $customerGroupId,
+        public int $variantId,
+        public ?int $customerGroupId,
         /** Quantity of the line (this variant). */
-        public readonly int $lineQuantity,
+        public int $lineQuantity,
         /** Quantity of every line of the same product (mix and match). */
-        public readonly int $productQuantity,
-        public readonly \DateTimeInterface $now,
-        public readonly ?array $taxonQuantities = null,
+        public int $productQuantity,
+        public \DateTimeInterface $now,
+        public ?array $taxonQuantities = null,
         /** The variant has a catalog promotion (`skip_if_promoted` rules do not apply). */
-        public readonly bool $promoted = false,
+        public bool $promoted = false,
     ) {
     }
 

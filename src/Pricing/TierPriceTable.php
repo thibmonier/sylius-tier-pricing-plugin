@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace Tmonier\SyliusTierPricingPlugin\Pricing;
 
 /** Price breaks of a variant for a customer: row 1 is the price of one unit. */
-final class TierPriceTable
+final readonly class TierPriceTable
 {
     /**
      * @param list<TierPriceRow> $rows
      */
     public function __construct(
-        public readonly array $rows,
-        public readonly ?TierPriceNudge $nudge = null,
+        public array $rows,
+        public ?TierPriceNudge $nudge = null,
         /** Unit price for the quantities already in the cart. */
-        public readonly ?int $currentUnitPrice = null,
+        public ?int $currentUnitPrice = null,
     ) {
     }
 

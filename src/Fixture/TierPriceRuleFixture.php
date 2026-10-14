@@ -103,7 +103,7 @@ final class TierPriceRuleFixture extends AbstractFixture
         $rule = $this->factory->createNew();
         $rule->setChannel($channel);
         $rule->setCustomerGroup($group);
-        $rule->setScope(null === $variant ? TierPriceRuleInterface::SCOPE_PRODUCT : TierPriceRuleInterface::SCOPE_VARIANT);
+        $rule->setScope($variant instanceof \Sylius\Component\Core\Model\ProductVariantInterface ? TierPriceRuleInterface::SCOPE_VARIANT : TierPriceRuleInterface::SCOPE_PRODUCT);
         $rule->setProduct($product);
         $rule->setVariant($variant);
         $rule->setQuantityBasis($basis);

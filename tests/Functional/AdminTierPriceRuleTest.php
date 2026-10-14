@@ -217,7 +217,7 @@ final class AdminTierPriceRuleTest extends WebTestCase
         $add = $tab->filter('[data-test-tmonier-tier-pricing-add]')->attr('href');
         self::assertSame(sprintf('/admin/tier-price-rules/new/product/%d', $this->idOf($product)), $add);
 
-        $crawler = $this->client->request('GET', (string) $add);
+        $crawler = $this->client->request('GET', $add);
         self::assertResponseIsSuccessful();
         self::assertCount(1, $crawler->filter(sprintf('#tmonier_tier_pricing_tier_price_rule_product option[value="%d"][selected]', $this->idOf($product))));
     }

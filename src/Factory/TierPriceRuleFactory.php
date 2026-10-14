@@ -9,15 +9,15 @@ use Sylius\Component\Core\Repository\ProductRepositoryInterface;
 use Sylius\Resource\Factory\FactoryInterface;
 use Tmonier\SyliusTierPricingPlugin\Entity\TierPriceRuleInterface;
 
-final class TierPriceRuleFactory implements TierPriceRuleFactoryInterface
+final readonly class TierPriceRuleFactory implements TierPriceRuleFactoryInterface
 {
     /**
      * @param FactoryInterface<TierPriceRuleInterface> $decoratedFactory
      * @param ProductRepositoryInterface<ProductInterface> $productRepository
      */
     public function __construct(
-        private readonly FactoryInterface $decoratedFactory,
-        private readonly ProductRepositoryInterface $productRepository,
+        private FactoryInterface $decoratedFactory,
+        private ProductRepositoryInterface $productRepository,
     ) {
     }
 

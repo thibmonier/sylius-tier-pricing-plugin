@@ -7,9 +7,9 @@ namespace Tmonier\SyliusTierPricingPlugin\Csv;
 use Doctrine\ORM\EntityManagerInterface;
 use Tmonier\SyliusTierPricingPlugin\Entity\TierPriceRuleInterface;
 
-final class TierPriceRuleCsvExporter
+final readonly class TierPriceRuleCsvExporter
 {
-    public function __construct(private readonly EntityManagerInterface $entityManager)
+    public function __construct(private EntityManagerInterface $entityManager)
     {
     }
 
