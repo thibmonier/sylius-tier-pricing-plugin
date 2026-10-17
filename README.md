@@ -1,5 +1,7 @@
 # Sylius Tier Pricing Plugin
 
+> Français : [README.fr.md](README.fr.md) <!-- vitrine:lang -->
+
 [![Build](https://github.com/thibmonier/sylius-tier-pricing-plugin/actions/workflows/build.yaml/badge.svg)](https://github.com/thibmonier/sylius-tier-pricing-plugin/actions/workflows/build.yaml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -7,7 +9,7 @@
 
 Sylius 2 has one price per variant and channel. Quantity price breaks are a basic need of
 wholesale and B2B shops (and of many consumer shops), but the open source plugins that did it
-target Sylius 1, and the Sylius Plus / Elesto engines are proprietary.
+target Sylius 1.
 
 This plugin adds price break rules per channel, customer group, product or variant, applies
 them in the cart, and shows them on product pages and in the cart as conditional prices, free
@@ -312,6 +314,14 @@ APP_ENV=test vendor/bin/phpunit --testsuite non-unit
 vendor/bin/phpstan analyse
 vendor/bin/ecs check
 ```
+
+<!-- vitrine:demo-b2b:start -->
+## B2B demo
+
+This plugin is used in the [Sylius B2B demo](https://github.com/thibmonier/sylius-b2b-demo): a Sylius 2.3 shop with fictitious sample data where the B2B plugins work together. The source code, setup and fixtures of the demo are in that repository.
+
+The demo is an example, not a production setup.
+<!-- vitrine:demo-b2b:end -->
 
 ## License
 
