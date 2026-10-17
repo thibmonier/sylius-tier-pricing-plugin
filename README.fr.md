@@ -9,8 +9,7 @@
 
 Sylius 2 propose un seul prix par variante et par canal. Les paliers de prix selon la quantité sont
 un besoin de base des boutiques de gros et B2B (et de nombreuses boutiques grand public), mais les
-plugins open source qui les géraient ciblent Sylius 1, et les moteurs Sylius Plus / Elesto sont
-propriétaires.
+plugins open source qui les géraient ciblent Sylius 1.
 
 Ce plugin ajoute des règles de paliers de prix par canal, groupe de clients, produit ou variante,
 les applique dans le panier, et les affiche sur les pages produit et dans le panier sous forme de

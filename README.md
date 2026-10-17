@@ -9,7 +9,7 @@
 
 Sylius 2 has one price per variant and channel. Quantity price breaks are a basic need of
 wholesale and B2B shops (and of many consumer shops), but the open source plugins that did it
-target Sylius 1, and the Sylius Plus / Elesto engines are proprietary.
+target Sylius 1.
 
 This plugin adds price break rules per channel, customer group, product or variant, applies
 them in the cart, and shows them on product pages and in the cart as conditional prices, free
